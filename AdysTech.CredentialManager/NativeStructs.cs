@@ -31,7 +31,7 @@ namespace AdysTech.CredentialManager
             KEEP_USERNAME = 0x100000,
         }
 
-        internal enum CredentialUIReturnCodes
+        internal enum CredentialUIReturnCodes : uint
         {
             NO_ERROR = 0,
             ERROR_CANCELLED = 1223,
@@ -65,7 +65,7 @@ namespace AdysTech.CredentialManager
           [MarshalAs (UnmanagedType.Bool)] ref bool pfSave,
           CredentialUIFlags flags);
 
-        [DllImport ("credui.dll", EntryPoint = "CredUIParseUserNameW", CharSet = CharSet.Unicode)]
+        [DllImport ("credui.dll", EntryPoint = "CredUIParseUserNameW", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern CredentialUIReturnCodes CredUIParseUserName(
                 string userName,
                 StringBuilder user,
@@ -102,7 +102,7 @@ namespace AdysTech.CredentialManager
             public IntPtr Attributes;
             public IntPtr TargetAlias;
             public IntPtr UserName;
-           
+
         }
 
         [DllImport ("Advapi32.dll", EntryPoint = "CredDeleteW", CharSet = CharSet.Unicode, SetLastError = true)]

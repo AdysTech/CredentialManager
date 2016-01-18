@@ -31,7 +31,7 @@ namespace CredentialManagerTest
 
             try
             {
-                Assert.IsNotNull (CredentialManager.GetCredentials ("TestSystem"), "GetCredential failed");
+                Assert.IsNotNull (CredentialManager.GetCredentials ("localhost:8086"), "GetCredential failed");
             }
             catch ( Exception e )
             {
