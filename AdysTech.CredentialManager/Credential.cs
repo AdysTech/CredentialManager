@@ -10,13 +10,13 @@ namespace AdysTech.CredentialManager
     internal class Credential
     {
         public UInt32 Flags;
-        public NativeStructs.CredentialType Type;
+        public NativeCode.CredentialType Type;
         public string TargetName;
         public string Comment;
         public DateTime LastWritten;
         public UInt32 CredentialBlobSize;
         public string CredentialBlob;
-        public NativeStructs.Persistance Persist;
+        public NativeCode.Persistance Persist;
         public UInt32 AttributeCount;
         public IntPtr Attributes;
         public string TargetAlias;
@@ -27,7 +27,7 @@ namespace AdysTech.CredentialManager
 
         }
 
-        internal Credential(NativeStructs.NativeCredential ncred)
+        internal Credential(NativeCode.NativeCredential ncred)
         {
             CredentialBlobSize = ncred.CredentialBlobSize;
             CredentialBlob = Marshal.PtrToStringUni (ncred.CredentialBlob,
@@ -37,7 +37,7 @@ namespace AdysTech.CredentialManager
             TargetAlias = Marshal.PtrToStringUni (ncred.TargetAlias);
             Type = ncred.Type;
             Flags = ncred.Flags;
-            Persist = (NativeStructs.Persistance) ncred.Persist;
+            Persist = (NativeCode.Persistance) ncred.Persist;
             LastWritten = DateTime.FromFileTime ((long) ( (ulong) ncred.LastWritten.dwHighDateTime << 32 | (ulong) ncred.LastWritten.dwLowDateTime ));
         }
 
@@ -50,8 +50,8 @@ namespace AdysTech.CredentialManager
             Attributes = IntPtr.Zero;
             Comment = null;
             TargetAlias = null;
-            Type = NativeStructs.CredentialType.GENERIC;
-            Persist = NativeStructs.Persistance.SESSION;
+            Type = NativeCode.CredentialType.Generic;
+            Persist = NativeCode.Persistance.Session;
         }
 
         /// <summary>
@@ -60,9 +60,9 @@ namespace AdysTech.CredentialManager
         /// <param name="cred">The managed Credential counterpart containing data to be stored.</param>
         /// <returns>A NativeCredential instance that is derived from the given Credential
         /// instance.</returns>
-        internal NativeStructs.NativeCredential GetNativeCredential()
+        internal NativeCode.NativeCredential GetNativeCredential()
         {
-            NativeStructs.NativeCredential ncred = new NativeStructs.NativeCredential ();
+            NativeCode.NativeCredential ncred = new NativeCode.NativeCredential ();
             ncred.AttributeCount = 0;
             ncred.Attributes = IntPtr.Zero;
             ncred.Comment = IntPtr.Zero;

@@ -21,8 +21,8 @@ namespace AdysTech.CredentialManager
             if ( !IsInvalid )
             {
                 // Get the Credential from the mem location
-                NativeStructs.NativeCredential ncred = (NativeStructs.NativeCredential) Marshal.PtrToStructure (handle,
-                      typeof (NativeStructs.NativeCredential));
+                NativeCode.NativeCredential ncred = (NativeCode.NativeCredential) Marshal.PtrToStructure (handle,
+                      typeof (NativeCode.NativeCredential));
 
                 // Create a managed Credential type and fill it with data from the native counterpart.
                 Credential cred = new Credential (ncred);
@@ -46,7 +46,7 @@ namespace AdysTech.CredentialManager
             {
                 // NOTE: We should also ZERO out the memory allocated to the handle, before free'ing it
                 // so there are no traces of the sensitive data left in memory.
-                NativeStructs.CredFree (handle);
+                NativeCode.CredFree (handle);
                 // Mark the handle as invalid for future users.
                 SetHandleAsInvalid ();
                 return true;

@@ -1,12 +1,9 @@
-﻿using Microsoft.Win32.SafeHandles;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.ComponentModel;
-using System.Linq;
+using System.Diagnostics;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace AdysTech.CredentialManager
 {
@@ -20,14 +17,15 @@ namespace AdysTech.CredentialManager
         /// Opens OS Version specific Window prompting for credentials
         /// </summary>
         /// <param name="Target">A descriptive text for where teh credentials being asked are used for</param>
+        /// <param name="save">Whether or not to offer the checkbox to save the credentials</param>
         /// <returns>NetworkCredential object containing the user name, </returns>
-        public static NetworkCredential PromptForCredentials(string Target)
+        public static NetworkCredential PromptForCredentials(string Target, ref bool save)
         {
             var username = String.Empty;
             var passwd = String.Empty;
             var domain = String.Empty;
 
-            if ( !PromptForCredentials (Target, out username, out passwd, out domain) )
+            if ( !PromptForCredentials (Target, ref save, out username, out passwd, out domain) )
                 return null;
             return new NetworkCredential (username, passwd, domain);
         }
@@ -36,73 +34,165 @@ namespace AdysTech.CredentialManager
         /// Opens OS Version specific Window prompting for credentials
         /// </summary>
         /// <param name="Target">A descriptive text for where teh credentials being asked are used for</param>
+        /// <param name="save">Whether or not to offer the checkbox to save the credentials</param>
         /// <param name="Message">A brief message to display in the dialog box</param>
         /// <param name="Caption">Title for the dialog box</param>
         /// <returns>NetworkCredential object containing the user name, </returns>
-        public static NetworkCredential PromptForCredentials(string Target, string Message, string Caption)
+        public static NetworkCredential PromptForCredentials(string Target, ref bool save, string Message, string Caption)
         {
             var username = String.Empty;
             var passwd = String.Empty;
             var domain = String.Empty;
 
-            if ( !PromptForCredentials (Target, Message, Caption, out username, out passwd, out domain) )
+            if ( !PromptForCredentials (Target, ref  save, Message, Caption, out username, out passwd, out domain) )
                 return null;
             return new NetworkCredential (username, passwd, domain);
         }
 
-        internal static bool PromptForCredentials(string target, out string user, out string password, out string domain)
+        internal static bool PromptForCredentials(string target, ref bool save, out string user, out string password, out string domain)
         {
-            return PromptForCredentials (target, new NativeStructs.CredentialUIInfo (), out user, out password, out domain);
+            return PromptForCredentials (target, new NativeCode.CredentialUIInfo (), ref save, out user, out password, out domain);
         }
 
-        internal static bool PromptForCredentials(string target, string Message, string Caption, out string user, out string password, out string domain)
+        internal static bool PromptForCredentials(string target, ref bool save, string Message, string Caption, out string user, out string password, out string domain)
         {
-            NativeStructs.CredentialUIInfo credUI = new NativeStructs.CredentialUIInfo ();
+            NativeCode.CredentialUIInfo credUI = new NativeCode.CredentialUIInfo ();
             credUI.pszMessageText = Message;
             credUI.pszCaptionText = Caption;
-            return PromptForCredentials (target, credUI, out user, out password, out domain);
+            return PromptForCredentials (target, credUI, ref save, out user, out password, out domain);
         }
 
-        private static bool PromptForCredentials(string target, NativeStructs.CredentialUIInfo credUI, out string user, out string password, out string domain)
+        private static bool PromptForCredentials(string target, NativeCode.CredentialUIInfo credUI, ref bool save, out string user, out string password, out string domain)
         {
+            user = String.Empty;
+            password = String.Empty;
+            domain = String.Empty;
+
+
+
+            // Setup the flags and variables
+            credUI.cbSize = Marshal.SizeOf (credUI);
+            int errorcode = 0;
+            uint dialogReturn;
+            uint authPackage = 0;
+
+            IntPtr outCredBuffer = new IntPtr ();
+            uint outCredSize;
+            var flags = NativeCode.PromptForWindowsCredentialsFlags.GenericCredentials | NativeCode.PromptForWindowsCredentialsFlags.EnumerateCurrentUser;
+            flags = save ? flags | NativeCode.PromptForWindowsCredentialsFlags.ShowCheckbox : flags;
+
+            // Setup the flags and variables
+            int result = NativeCode.CredUIPromptForWindowsCredentials (ref credUI,
+                errorcode,
+                ref authPackage,
+                IntPtr.Zero,
+                0,
+                out outCredBuffer,
+                out outCredSize,
+                ref save,
+                flags);
+
+            var usernameBuf = new StringBuilder (100);
+            var passwordBuf = new StringBuilder (100);
+            var domainBuf = new StringBuilder (100);
+
+            int maxUserName = 100;
+            int maxDomain = 100;
+            int maxPassword = 100;
+            if ( result == 0 )
+            {
+                if ( NativeCode.CredUnPackAuthenticationBuffer (0, outCredBuffer, outCredSize, usernameBuf, ref maxUserName,
+                                                   domainBuf, ref maxDomain, passwordBuf, ref maxPassword) )
+                {
+                    user = usernameBuf.ToString ();
+                    password = passwordBuf.ToString ();
+                    domain = domainBuf.ToString ();
+                    if ( String.IsNullOrWhiteSpace (domain) )
+                    {
+                        Debug.WriteLine ("Domain null");
+                        if ( !ParseUserName (usernameBuf.ToString (), maxUserName, maxDomain, out user, out password) )
+                            user = usernameBuf.ToString ();
+                    }
+                }
+
+                //mimic SecureZeroMem function to make sure buffer is zeroed out. SecureZeroMem is not an exported function, neither is RtlSecureZeroMemory
+                var zeroBytes = new byte[outCredSize];
+                Marshal.Copy (zeroBytes, 0, outCredBuffer, (int) outCredSize);
+
+                //clear the memory allocated by CredUIPromptForWindowsCredentials 
+                NativeCode.CoTaskMemFree (outCredBuffer);
+                return true;
+            }
+
+            user = null;
+            domain = null;
+            return false;
+        }
+
+        private static bool ParseUserName(string usernameBuf, int maxUserName, int maxDomain, out string user, out string domain)
+        {
+            StringBuilder userBuilder = new StringBuilder ();
+            StringBuilder domainBuilder = new StringBuilder ();
+            user = String.Empty;
+            domain = String.Empty;
+
+            var returnCode = NativeCode.CredUIParseUserName (usernameBuf, userBuilder, maxUserName, domainBuilder, maxDomain);
+            Debug.WriteLine (returnCode);
+            switch ( returnCode )
+            {
+                case NativeCode.CredentialUIReturnCodes.Success: // The username is valid.
+                    user = userBuilder.ToString ();
+                    domain = domainBuilder.ToString ();
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Accepts credentials in a console window
+        /// </summary>
+        /// <param name="Target">A descriptive text for where teh credentials being asked are used for</param>
+        /// <returns>NetworkCredential object containing the user name, </returns>
+        public static NetworkCredential PromptForCredentialsConsole(string target)
+        {
+            var user = String.Empty;
+            var password = String.Empty;
+            var domain = String.Empty;
+
             // Setup the flags and variables
             StringBuilder userPassword = new StringBuilder (), userID = new StringBuilder ();
-            credUI.cbSize = Marshal.SizeOf (credUI);
             bool save = true;
-            NativeStructs.CredentialUIFlags flags = NativeStructs.CredentialUIFlags.COMPLETE_USERNAME | NativeStructs.CredentialUIFlags.PERSIST | NativeStructs.CredentialUIFlags.EXCLUDE_CERTIFICATES;
+            NativeCode.CredentialUIFlags flags = NativeCode.CredentialUIFlags.CompleteUsername | NativeCode.CredentialUIFlags.ExcludeCertificates;
 
             // Prompt the user
-            NativeStructs.CredentialUIReturnCodes returnCode = NativeStructs.CredUIPromptForCredentials (ref credUI, target, IntPtr.Zero, 0, userID, 100, userPassword, 100, ref save, flags);
+            NativeCode.CredentialUIReturnCodes returnCode = NativeCode.CredUICmdLinePromptForCredentials (target, IntPtr.Zero, 0, userID, 100, userPassword, 100, ref save, flags);
 
             password = userPassword.ToString ();
 
             StringBuilder userBuilder = new StringBuilder ();
             StringBuilder domainBuilder = new StringBuilder ();
 
-            returnCode = NativeStructs.CredUIParseUserName (userID.ToString (), userBuilder, int.MaxValue, domainBuilder, int.MaxValue);
+            returnCode = NativeCode.CredUIParseUserName (userID.ToString (), userBuilder, int.MaxValue, domainBuilder, int.MaxValue);
             switch ( returnCode )
             {
-                case NativeStructs.CredentialUIReturnCodes.NO_ERROR: // The username is valid.
+                case NativeCode.CredentialUIReturnCodes.Success: // The username is valid.
                     user = userBuilder.ToString ();
                     domain = domainBuilder.ToString ();
-                    return true;
+                    break;
 
-                case NativeStructs.CredentialUIReturnCodes.ERROR_INVALID_ACCOUNT_NAME: // The username is not valid.
+                case NativeCode.CredentialUIReturnCodes.InvalidAccountName: // The username is not valid.
                     user = userID.ToString ();
                     domain = null;
-                    return false;
+                    break;
 
-                case NativeStructs.CredentialUIReturnCodes.ERROR_INSUFFICIENT_BUFFER: // One of the buffers is too small.
+                case NativeCode.CredentialUIReturnCodes.InsufficientBuffer: // One of the buffers is too small.
                     throw new OutOfMemoryException ();
 
-                case NativeStructs.CredentialUIReturnCodes.ERROR_INVALID_PARAMETER: // ulUserMaxChars or ulDomainMaxChars is zero OR userName, user, or domain is NULL.
+                case NativeCode.CredentialUIReturnCodes.InvalidParameter: // ulUserMaxChars or ulDomainMaxChars is zero OR userName, user, or domain is NULL.
                     throw new ArgumentNullException ("userName");
 
-                default:
-                    user = null;
-                    domain = null;
-                    return false;
             }
+            return new NetworkCredential (user, password, domain);
         }
 
 
@@ -118,10 +208,10 @@ namespace AdysTech.CredentialManager
             // Go ahead with what we have are stuff it into the CredMan structures.
             Credential cred = new Credential (credential);
             cred.TargetName = Target;
-            cred.Persist = NativeStructs.Persistance.ENTERPRISE;
-            NativeStructs.NativeCredential ncred = cred.GetNativeCredential ();
+            cred.Persist = NativeCode.Persistance.Entrprise;
+            NativeCode.NativeCredential ncred = cred.GetNativeCredential ();
             // Write the info into the CredMan storage.
-            bool written = NativeStructs.CredWrite (ref ncred, 0);
+            bool written = NativeCode.CredWrite (ref ncred, 0);
             int lastError = Marshal.GetLastWin32Error ();
             if ( written )
             {
@@ -148,7 +238,7 @@ namespace AdysTech.CredentialManager
             var domain = String.Empty;
 
             // Make the API call using the P/Invoke signature
-            bool ret = NativeStructs.CredRead (Target, NativeStructs.CredentialType.GENERIC, 0, out nCredPtr);
+            bool ret = NativeCode.CredRead (Target, NativeCode.CredentialType.Generic, 0, out nCredPtr);
             int lastError = Marshal.GetLastWin32Error ();
             if ( !ret )
                 throw new Win32Exception (lastError, "CredDelete throw an error");
@@ -163,12 +253,12 @@ namespace AdysTech.CredentialManager
                     var user = cred.UserName;
                     StringBuilder userBuilder = new StringBuilder ();
                     StringBuilder domainBuilder = new StringBuilder ();
-                    var ret1 = NativeStructs.CredUIParseUserName (user, userBuilder, int.MaxValue, domainBuilder, int.MaxValue);
+                    var ret1 = NativeCode.CredUIParseUserName (user, userBuilder, int.MaxValue, domainBuilder, int.MaxValue);
                     lastError = Marshal.GetLastWin32Error ();
 
                     //assuming invalid account name to be not meeting condition for CredUIParseUserName 
                     //"The name must be in UPN or down-level format, or a certificate"
-                    if ( ret1 == NativeStructs.CredentialUIReturnCodes.ERROR_INVALID_ACCOUNT_NAME )
+                    if ( ret1 == NativeCode.CredentialUIReturnCodes.InvalidAccountName )
                         userBuilder.Append (user);
                     else if ( (uint) ret1 > 0 )
                         throw new Win32Exception (lastError, "CredUIParseUserName throw an error");
@@ -190,7 +280,7 @@ namespace AdysTech.CredentialManager
         public static bool RemoveCredentials(string Target)
         {
             // Make the API call using the P/Invoke signature
-            var ret = NativeStructs.CredDelete (Target, NativeStructs.CredentialType.GENERIC, 0);
+            var ret = NativeCode.CredDelete (Target, NativeCode.CredentialType.Generic, 0);
             int lastError = Marshal.GetLastWin32Error ();
             if ( !ret )
                 throw new Win32Exception (lastError, "CredDelete throw an error");
