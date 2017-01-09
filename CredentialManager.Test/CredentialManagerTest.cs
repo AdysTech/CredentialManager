@@ -9,15 +9,18 @@ namespace CredentialManagerTest
     [TestClass]
     public class CredentialManagerTest
     {
-        [TestMethod]
+        private const string uName = "UserName";
+        private const string pwd = "CrazyPassword";
+        private const string domain = "AdysTech.com";
+
+
+        [TestMethod, TestCategory ("AppVeyor")]
         public void TestSaveCredentials()
         {
             try
             {
-                var cred = new NetworkCredential ("TestUser", "Pwd");
+                var cred = new NetworkCredential (uName,pwd,domain);
                 Assert.IsTrue (CredentialManager.SaveCredentials ("TestSystem", cred), "SaveCredential failed");
-
-
             }
             catch ( Exception e )
             {
@@ -28,14 +31,15 @@ namespace CredentialManagerTest
         }
 
 
-        [TestMethod]
+        [TestMethod, TestCategory ("AppVeyor")]
         public void TestGetCredentials()
         {
 
             try
             {
-                Assert.IsNotNull (CredentialManager.GetCredentials ("TestSystem"), "GetCredential failed");
-
+                var cred = CredentialManager.GetCredentials ("TestSystem");
+                Assert.IsNotNull (cred, "GetCredential failed");
+                Assert.IsTrue (uName == cred.UserName && pwd == cred.Password && domain == cred.Domain, "Saved and retreived data doesn't match");
             }
             catch ( Exception e )
             {

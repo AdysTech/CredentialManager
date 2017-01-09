@@ -1,0 +1,27 @@
+version: 0.{build}
+pull_requests:
+  do_not_increment_build_number: true
+branches:
+  only:
+  - master
+before_build:
+- set PATH="C:\Program Files (x86)\MSBuild\14.0\Bin";%PATH%
+- nuget restore
+build:
+  verbosity: minimal
+  publish_nuget: true
+  publish_nuget_symbols: true
+test:
+  categories:
+    only:
+      - AppVeyor
+deploy:
+- provider: NuGet
+  server: https://www.nuget.org/packages/AdysTech.CredentialManager
+  api_key:
+    secure: nlBDuJJE7GoAtSvHKJDjdutExvlEQErL8Q9gFqmhURY4xUgFT946cs2mLeQ2Qezi
+  on:
+    branch: master
+artifacts:
+- path: AdysTech.CredentialManager\bin\Debug
+  name: CredentialManager

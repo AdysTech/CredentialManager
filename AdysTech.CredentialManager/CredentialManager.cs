@@ -110,8 +110,9 @@ namespace AdysTech.CredentialManager
                     if ( String.IsNullOrWhiteSpace (domain) )
                     {
                         Debug.WriteLine ("Domain null");
-                        if ( !ParseUserName (usernameBuf.ToString (), maxUserName, maxDomain, out user, out password) )
+                        if ( !ParseUserName (usernameBuf.ToString (), maxUserName, maxDomain, out user, out domain) )
                             user = usernameBuf.ToString ();
+                        password = passwordBuf.ToString ();
                     }
                 }
 
