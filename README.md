@@ -1,5 +1,5 @@
 # CredentialManager
-C# wrapper around CredWrite / CredRead functions to store and retreive from Windows Credential Store
+C# wrapper around CredWrite / CredRead functions to store and retreive from Windows Credential Store.
 Windows OS comes equipped with a very secure robust [Credential Manager](https://technet.microsoft.com/en-us/library/jj554668.aspx) from Windows Xp onwards, and [good set of APIs] (https://msdn.microsoft.com/en-us/library/windows/desktop/aa374731(v=vs.85).aspx#credentials_management_functions) to interact with it. However .Net fraework did not provide any standard way to interact with this vault [until Windows 8.1](https://msdn.microsoft.com/en-us/library/windows/apps/windows.security.credentials.aspx).
 
 Microsoft Peer Channel blog (WCF team) has written [a blog post](http://blogs.msdn.com/b/peerchan/archive/2005/11/01/487834.aspx) in 2005 which provided basic structure of using the WIn32 APIs for credential management in .Net.
@@ -24,3 +24,9 @@ CredentialManager.SaveCredentials ("TestSystem", cred);
 ```C#
 var cred = CredentialManager.GetCredentials ("TestSystem");
 ```            
+
+###Nuget Package
+[AdysTech.CredentialManager](https://www.nuget.org/packages/AdysTech.CredentialManager/)
+
+####Latest Download
+[AdysTech.CredentialManager](https://ci.appveyor.com/api/buildjobs/so3ev8bmq51pp2im/artifacts/AdysTech.CredentialManager%2Fbin%2FCredentialManager.zip)
