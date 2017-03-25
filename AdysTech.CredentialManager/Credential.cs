@@ -30,22 +30,27 @@ namespace AdysTech.CredentialManager
         internal Credential(NativeCode.NativeCredential ncred)
         {
             CredentialBlobSize = ncred.CredentialBlobSize;
-            CredentialBlob = Marshal.PtrToStringUni (ncred.CredentialBlob,
-             (int) ncred.CredentialBlobSize / 2);
-            UserName = Marshal.PtrToStringUni (ncred.UserName);
-            TargetName = Marshal.PtrToStringUni (ncred.TargetName);
-            TargetAlias = Marshal.PtrToStringUni (ncred.TargetAlias);
+            CredentialBlob = Marshal.PtrToStringUni(ncred.CredentialBlob,
+             (int)ncred.CredentialBlobSize / 2);
+            UserName = Marshal.PtrToStringUni(ncred.UserName);
+            TargetName = Marshal.PtrToStringUni(ncred.TargetName);
+            TargetAlias = Marshal.PtrToStringUni(ncred.TargetAlias);
             Type = ncred.Type;
             Flags = ncred.Flags;
-            Persist = (NativeCode.Persistance) ncred.Persist;
-            LastWritten = DateTime.FromFileTime ((long) ( (ulong) ncred.LastWritten.dwHighDateTime << 32 | (ulong) ncred.LastWritten.dwLowDateTime ));
+            Persist = (NativeCode.Persistance)ncred.Persist;
+            try
+            {
+                LastWritten = DateTime.FromFileTime((long)((ulong)ncred.LastWritten.dwHighDateTime << 32 | (ulong)ncred.LastWritten.dwLowDateTime));
+            }
+            catch (ArgumentOutOfRangeException e)
+            { }
         }
 
         public Credential(System.Net.NetworkCredential credential)
         {
             CredentialBlob = credential.Password;
-            UserName = String.IsNullOrWhiteSpace (credential.Domain) ? credential.UserName : credential.Domain + "\\" + credential.UserName;
-            CredentialBlobSize = (UInt32) Encoding.Unicode.GetBytes (credential.Password).Length;
+            UserName = String.IsNullOrWhiteSpace(credential.Domain) ? credential.UserName : credential.Domain + "\\" + credential.UserName;
+            CredentialBlobSize = (UInt32)Encoding.Unicode.GetBytes(credential.Password).Length;
             AttributeCount = 0;
             Attributes = IntPtr.Zero;
             Comment = null;
@@ -62,22 +67,22 @@ namespace AdysTech.CredentialManager
         /// instance.</returns>
         internal NativeCode.NativeCredential GetNativeCredential()
         {
-            NativeCode.NativeCredential ncred = new NativeCode.NativeCredential ();
+            NativeCode.NativeCredential ncred = new NativeCode.NativeCredential();
             ncred.AttributeCount = 0;
             ncred.Attributes = IntPtr.Zero;
             ncred.Comment = IntPtr.Zero;
             ncred.TargetAlias = IntPtr.Zero;
             ncred.Type = this.Type;
-            ncred.Persist = (UInt32) this.Persist;
-            ncred.UserName = Marshal.StringToCoTaskMemUni (this.UserName);
-            ncred.TargetName = Marshal.StringToCoTaskMemUni (this.TargetName);
-            ncred.CredentialBlob = Marshal.StringToCoTaskMemUni (this.CredentialBlob);
-            ncred.CredentialBlobSize = (UInt32) this.CredentialBlobSize;
-            if ( this.LastWritten != DateTime.MinValue )
+            ncred.Persist = (UInt32)this.Persist;
+            ncred.UserName = Marshal.StringToCoTaskMemUni(this.UserName);
+            ncred.TargetName = Marshal.StringToCoTaskMemUni(this.TargetName);
+            ncred.CredentialBlob = Marshal.StringToCoTaskMemUni(this.CredentialBlob);
+            ncred.CredentialBlobSize = (UInt32)this.CredentialBlobSize;
+            if (this.LastWritten != DateTime.MinValue)
             {
-                var fileTime = this.LastWritten.ToFileTimeUtc ();
-                ncred.LastWritten.dwLowDateTime = (int) ( fileTime & 0xFFFFFFFFL );
-                ncred.LastWritten.dwHighDateTime = (int) ( ( fileTime >> 32 ) & 0xFFFFFFFFL );
+                var fileTime = this.LastWritten.ToFileTimeUtc();
+                ncred.LastWritten.dwLowDateTime = (int)(fileTime & 0xFFFFFFFFL);
+                ncred.LastWritten.dwHighDateTime = (int)((fileTime >> 32) & 0xFFFFFFFFL);
             }
             return ncred;
         }
