@@ -9,23 +9,23 @@ Need: Many web services and REST Urls use basic authentication. .Net does not ha
 `ICredential.GetCredential (uri, "Basic")` does not provide a way to get current user security context either as it will expose the current password in plain text. So only way to retrieve Basic auth text is to prompt the user for the credentials and storing it, or assume some stored credentials in Windows store, and retrieving it.
 
 This project provides access to all three
-####1. Prompt user for Credentials
+#### 1. Prompt user for Credentials
 ```C#
 var cred = CredentialManager.PromptForCredentials ("Some Webservice", ref save, "Please provide credentials", "Credentials for service");
 ```            
 
-####2. Save Credentials
+#### 2. Save Credentials
 ```C#
 var cred = new NetworkCredential ("TestUser", "Pwd");
 CredentialManager.SaveCredentials ("TestSystem", cred);
 ```            
 
-####3. Retrieve saved Credentials
+#### 3. Retrieve saved Credentials
 ```C#
 var cred = CredentialManager.GetCredentials ("TestSystem");
 ```            
 
-###Nuget Package
+### Nuget Package
 [AdysTech.CredentialManager](https://www.nuget.org/packages/AdysTech.CredentialManager/)
 
 ####Latest Download
