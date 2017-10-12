@@ -1,6 +1,8 @@
+[![Build status](https://ci.appveyor.com/api/projects/status/b6osdeuob7qeuivr?svg=true)](https://ci.appveyor.com/project/AdysTech/credentialmanager)
+
 # CredentialManager
 C# wrapper around CredWrite / CredRead functions to store and retrieve from Windows Credential Store.
-Windows OS comes equipped with a very secure robust [Credential Manager](https://technet.microsoft.com/en-us/library/jj554668.aspx) from Windows Xp onwards, and [good set of APIs] (https://msdn.microsoft.com/en-us/library/windows/desktop/aa374731(v=vs.85).aspx#credentials_management_functions) to interact with it. However .Net framework did not provide any standard way to interact with this vault [until Windows 8.1](https://msdn.microsoft.com/en-us/library/windows/apps/windows.security.credentials.aspx).
+Windows OS comes equipped with a very secure robust [Credential Manager](https://technet.microsoft.com/en-us/library/jj554668.aspx) from Windows Xp onwards, and [good set of APIs](https://msdn.microsoft.com/en-us/library/windows/desktop/aa374731(v=vs.85).aspx#credentials_management_functions) to interact with it. However .Net framework did not provide any standard way to interact with this vault [until Windows 8.1](https://msdn.microsoft.com/en-us/library/windows/apps/windows.security.credentials.aspx).
 
 Microsoft Peer Channel blog (WCF team) has written [a blog post](http://blogs.msdn.com/b/peerchan/archive/2005/11/01/487834.aspx) in 2005 which provided basic structure of using the WIn32 APIs for credential management in .Net.
 I used their code, and improved up on it to add `PromptForCredentials` function to display a dialog to get the credentials from user.
