@@ -242,7 +242,7 @@ namespace AdysTech.CredentialManager
             bool ret = NativeCode.CredRead (Target, NativeCode.CredentialType.Generic, 0, out nCredPtr);
             int lastError = Marshal.GetLastWin32Error ();
             if ( !ret )
-                throw new Win32Exception (lastError, "CredDelete throw an error");
+                throw new Win32Exception (lastError, "CredRead threw an error");
 
             // If the API was successful then...
             if ( ret )
@@ -262,7 +262,7 @@ namespace AdysTech.CredentialManager
                     if ( ret1 == NativeCode.CredentialUIReturnCodes.InvalidAccountName )
                         userBuilder.Append (user);
                     else if ( (uint) ret1 > 0 )
-                        throw new Win32Exception (lastError, "CredUIParseUserName throw an error");
+                        throw new Win32Exception (lastError, "CredUIParseUserName threw an error");
 
                     username = userBuilder.ToString ();
                     domain = domainBuilder.ToString ();
@@ -284,7 +284,7 @@ namespace AdysTech.CredentialManager
             var ret = NativeCode.CredDelete (Target, NativeCode.CredentialType.Generic, 0);
             int lastError = Marshal.GetLastWin32Error ();
             if ( !ret )
-                throw new Win32Exception (lastError, "CredDelete throw an error");
+                throw new Win32Exception (lastError, "CredDelete threw an error");
             return ret;
         }
 
