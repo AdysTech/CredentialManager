@@ -1,4 +1,4 @@
-[![Build status](https://ci.appveyor.com/api/projects/status/b6osdeuob7qeuivr?svg=true)](https://ci.appveyor.com/project/AdysTech/credentialmanager)
+ [![Build status](https://ci.appveyor.com/api/projects/status/b6osdeuob7qeuivr?svg=true)](https://ci.appveyor.com/project/AdysTech/credentialmanager)
 
 # CredentialManager
 C# wrapper around CredWrite / CredRead functions to store and retrieve from Windows Credential Store.
@@ -30,5 +30,5 @@ var cred = CredentialManager.GetCredentials ("TestSystem");
 ### Nuget Package
 [AdysTech.CredentialManager](https://www.nuget.org/packages/AdysTech.CredentialManager/)
 
-####Latest Download
+#### Latest Download
 [AdysTech.CredentialManager](https://ci.appveyor.com/api/buildjobs/so3ev8bmq51pp2im/artifacts/AdysTech.CredentialManager%2Fbin%2FCredentialManager.zip)
