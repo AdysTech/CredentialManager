@@ -118,7 +118,6 @@ namespace CredentialManagerTest
             }
         }
 
-        [TestMethod, TestCategory("AppVeyor")]
         public void TestGetCredentials_Windows()
         {
 
