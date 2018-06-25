@@ -70,23 +70,24 @@ namespace CredentialManagerTest
         /// <summary>
         /// Not working as Console window can't be seen during test
         /// </summary>
-       [TestMethod]
-        public void TestPromptForCredentialsConsole()
-        {
+       //[TestMethod]
+       // public void TestPromptForCredentialsConsole()
+       // {
 
-            try
-            {
-                bool save = false;
-                Assert.IsNotNull (CredentialManager.PromptForCredentialsConsole ("Some Webservice"), "PromptForCredentialsConsole failed");
+       //     try
+       //     {
+       //         bool save = false;
+       //         Assert.IsNotNull (CredentialManager.PromptForCredentialsConsole ("Some Webservice"), "PromptForCredentialsConsole failed");
 
-            }
-            catch ( Exception e )
-            {
-                Assert.Fail ("Unexpected exception of type {0} caught: {1}",
-                            e.GetType (), e.Message);
-                return;
-            }
-        }
+       //     }
+       //     catch ( Exception e )
+       //     {
+       //         Assert.Fail ("Unexpected exception of type {0} caught: {1}",
+       //                     e.GetType (), e.Message);
+       //         return;
+       //     }
+       // }
+
         [TestMethod]
         public void IntegrationTest()
         {
@@ -117,6 +118,26 @@ namespace CredentialManagerTest
             }
         }
 
-   
+        [TestMethod, TestCategory("AppVeyor")]
+        public void TestGetCredentials_Windows()
+        {
+
+            try
+            {
+                //https://msdn.microsoft.com/en-us/library/windows/desktop/aa374788(v=vs.85).aspx
+                //CredentialType.Windows internally gets translated to CRED_TYPE_DOMAIN_PASSWORD
+                //as per MSDN, for this type CredentialBlob can only be read by the authentication packages.
+                //I am not able to get the password even while running in elevated mode. more to come.
+                var cred = CredentialManager.GetCredentials("192.168.23.1",CredentialManager.CredentialType.Windows);
+                Assert.IsNotNull(cred, "GetCredential failed");
+                Assert.IsTrue(uName == cred.UserName && pwd == cred.Password && domain == cred.Domain, "Saved and retreived data doesn't match");
+            }
+            catch (Exception e)
+            {
+                Assert.Fail("Unexpected exception of type {0} caught: {1}",
+                            e.GetType(), e.Message);
+                return;
+            }
+        }
     }
 }
