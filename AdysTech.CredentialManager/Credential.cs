@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace AdysTech.CredentialManager
 {
@@ -30,8 +27,11 @@ namespace AdysTech.CredentialManager
         internal Credential(NativeCode.NativeCredential ncred)
         {
             CredentialBlobSize = ncred.CredentialBlobSize;
-            CredentialBlob = Marshal.PtrToStringUni(ncred.CredentialBlob,
-             (int)ncred.CredentialBlobSize / 2);
+            if (ncred.CredentialBlobSize > 2)
+            {
+                CredentialBlob = Marshal.PtrToStringUni(ncred.CredentialBlob,(int)ncred.CredentialBlobSize / 2);
+            }
+            
             UserName = Marshal.PtrToStringUni(ncred.UserName);
             TargetName = Marshal.PtrToStringUni(ncred.TargetName);
             TargetAlias = Marshal.PtrToStringUni(ncred.TargetAlias);
