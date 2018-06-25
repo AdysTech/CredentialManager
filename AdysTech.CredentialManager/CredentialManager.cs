@@ -238,16 +238,17 @@ namespace AdysTech.CredentialManager
             var domain = String.Empty;
 
             // Make the API call using the P/Invoke signature
+
             bool ret = NativeCode.CredRead(Target, (NativeCode.CredentialType) type, 0, out nCredPtr);
             int lastError = Marshal.GetLastWin32Error();
             if (!ret)
                 throw new Win32Exception(lastError, "CredDelete throw an error");
-
             // If the API was successful then...
             if (ret)
             {
                 try
                 {
+
                     using (CriticalCredentialHandle critCred = new CriticalCredentialHandle(nCredPtr))
                     {
                         Credential cred = critCred.GetCredential();
