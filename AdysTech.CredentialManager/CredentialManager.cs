@@ -253,10 +253,11 @@ namespace AdysTech.CredentialManager
                     {
                         Credential cred = critCred.GetCredential();
                         passwd = cred.CredentialBlob;
-                        var user = cred.UserName;
-                        StringBuilder userBuilder = new StringBuilder();
-                        StringBuilder domainBuilder = new StringBuilder();
-                        var ret1 = NativeCode.CredUIParseUserName(user, userBuilder, int.MaxValue, domainBuilder, int.MaxValue);
+                        var user = cred.UserName;                        
+                        StringBuilder userBuilder = new StringBuilder(cred.UserName.Length + 2);
+                        StringBuilder domainBuilder = new StringBuilder(cred.UserName.Length + 2);
+                                                
+                        var ret1 = NativeCode.CredUIParseUserName(user, userBuilder, userBuilder.Capacity, domainBuilder, domainBuilder.Capacity);
                         lastError = Marshal.GetLastWin32Error();
 
                         //assuming invalid account name to be not meeting condition for CredUIParseUserName

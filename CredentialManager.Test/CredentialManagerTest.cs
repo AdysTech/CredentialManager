@@ -9,8 +9,8 @@ namespace CredentialManagerTest
     [TestClass]
     public class CredentialManagerTest
     {
-        private const string uName = "UserName";
-        private const string pwd = "CrazyPassword";
+        private const string uName = "ZYYM3ufm3kFY9ZJZUAqYFQfzxcRc9rzdYxUwqEhBqqdrHttrh";
+        private const string pwd = "5NJuqKfJBtAZYYM3ufm3kFY9ZJZUAqYFQfzxcRc9rzdYxUwqEhBqqdrHttrhcvnnDPFHEn3L";
         private const string domain = "AdysTech.com";
 
 
