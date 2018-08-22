@@ -14,37 +14,37 @@ namespace CredentialManagerTest
         private const string domain = "AdysTech.com";
 
 
-        [TestMethod, TestCategory ("AppVeyor")]
+        [TestMethod, TestCategory("AppVeyor")]
         public void TestSaveCredentials()
         {
             try
             {
-                var cred = new NetworkCredential (uName,pwd,domain);
-                Assert.IsTrue (CredentialManager.SaveCredentials ("TestSystem", cred), "SaveCredential failed");
+                var cred = new NetworkCredential(uName, pwd, domain);
+                Assert.IsTrue(CredentialManager.SaveCredentials("TestSystem", cred), "SaveCredential failed");
             }
-            catch ( Exception e )
+            catch (Exception e)
             {
-                Assert.Fail ("Unexpected exception of type {0} caught: {1}",
-                            e.GetType (), e.Message);
+                Assert.Fail("Unexpected exception of type {0} caught: {1}",
+                            e.GetType(), e.Message);
                 return;
             }
         }
 
 
-        [TestMethod, TestCategory ("AppVeyor")]
+        [TestMethod, TestCategory("AppVeyor")]
         public void TestGetCredentials()
         {
 
             try
             {
-                var cred = CredentialManager.GetCredentials ("TestSystem");
-                Assert.IsNotNull (cred, "GetCredential failed");
-                Assert.IsTrue (uName == cred.UserName && pwd == cred.Password && domain == cred.Domain, "Saved and retreived data doesn't match");
+                var cred = CredentialManager.GetCredentials("TestSystem");
+                Assert.IsNotNull(cred, "GetCredential failed");
+                Assert.IsTrue(uName == cred.UserName && pwd == cred.Password && domain == cred.Domain, "Saved and retreived data doesn't match");
             }
-            catch ( Exception e )
+            catch (Exception e)
             {
-                Assert.Fail ("Unexpected exception of type {0} caught: {1}",
-                            e.GetType (), e.Message);
+                Assert.Fail("Unexpected exception of type {0} caught: {1}",
+                            e.GetType(), e.Message);
                 return;
             }
         }
@@ -56,13 +56,13 @@ namespace CredentialManagerTest
             try
             {
                 bool save = false;
-                Assert.IsNotNull (CredentialManager.PromptForCredentials ("Some Webservice", ref save, "Please provide credentials", "Credentials for service"), "PromptForCredentials failed");
+                Assert.IsNotNull(CredentialManager.PromptForCredentials("Some Webservice", ref save, "Please provide credentials", "Credentials for service"), "PromptForCredentials failed");
 
             }
-            catch ( Exception e )
+            catch (Exception e)
             {
-                Assert.Fail ("Unexpected exception of type {0} caught: {1}",
-                            e.GetType (), e.Message);
+                Assert.Fail("Unexpected exception of type {0} caught: {1}",
+                            e.GetType(), e.Message);
                 return;
             }
         }
@@ -70,23 +70,23 @@ namespace CredentialManagerTest
         /// <summary>
         /// Not working as Console window can't be seen during test
         /// </summary>
-       //[TestMethod]
-       // public void TestPromptForCredentialsConsole()
-       // {
+        //[TestMethod]
+        // public void TestPromptForCredentialsConsole()
+        // {
 
-       //     try
-       //     {
-       //         bool save = false;
-       //         Assert.IsNotNull (CredentialManager.PromptForCredentialsConsole ("Some Webservice"), "PromptForCredentialsConsole failed");
+        //     try
+        //     {
+        //         bool save = false;
+        //         Assert.IsNotNull (CredentialManager.PromptForCredentialsConsole ("Some Webservice"), "PromptForCredentialsConsole failed");
 
-       //     }
-       //     catch ( Exception e )
-       //     {
-       //         Assert.Fail ("Unexpected exception of type {0} caught: {1}",
-       //                     e.GetType (), e.Message);
-       //         return;
-       //     }
-       // }
+        //     }
+        //     catch ( Exception e )
+        //     {
+        //         Assert.Fail ("Unexpected exception of type {0} caught: {1}",
+        //                     e.GetType (), e.Message);
+        //         return;
+        //     }
+        // }
 
         [TestMethod]
         public void IntegrationTest()
@@ -95,25 +95,25 @@ namespace CredentialManagerTest
             try
             {
                 bool save = true;
-                var cred = CredentialManager.PromptForCredentials ("Some Webservice", ref save, "Please provide credentials", "Credentials for service");
-                Assert.IsNotNull (cred, "PromptForCredentials failed");
-                if ( save )
+                var cred = CredentialManager.PromptForCredentials("Some Webservice", ref save, "Please provide credentials", "Credentials for service");
+                Assert.IsNotNull(cred, "PromptForCredentials failed");
+                if (save)
                 {
                     var usr = cred.UserName;
                     var pwd = cred.Password;
                     var dmn = cred.Domain;
-                    Debug.WriteLine ("Usr:{0}, Pwd{1}, Dmn{2}", usr, pwd, dmn);
-                    Assert.IsTrue (CredentialManager.SaveCredentials ("TestSystem", cred), "SaveCredential failed");
-                    cred = CredentialManager.GetCredentials ("TestSystem");
-                    Assert.IsNotNull (cred, "GetCredential failed");
-                    Assert.IsTrue (usr == cred.UserName && pwd == cred.Password && dmn == cred.Domain, "Saved and retreived data doesn't match");
+                    Debug.WriteLine("Usr:{0}, Pwd{1}, Dmn{2}", usr, pwd, dmn);
+                    Assert.IsTrue(CredentialManager.SaveCredentials("TestSystem", cred), "SaveCredential failed");
+                    cred = CredentialManager.GetCredentials("TestSystem");
+                    Assert.IsNotNull(cred, "GetCredential failed");
+                    Assert.IsTrue(usr == cred.UserName && pwd == cred.Password && dmn == cred.Domain, "Saved and retreived data doesn't match");
                 }
 
             }
-            catch ( Exception e )
+            catch (Exception e)
             {
-                Assert.Fail ("Unexpected exception of type {0} caught: {1} on {2}",
-                            e.GetType (), e.Message, e.StackTrace);
+                Assert.Fail("Unexpected exception of type {0} caught: {1} on {2}",
+                            e.GetType(), e.Message, e.StackTrace);
                 return;
             }
         }
@@ -127,7 +127,7 @@ namespace CredentialManagerTest
                 //CredentialType.Windows internally gets translated to CRED_TYPE_DOMAIN_PASSWORD
                 //as per MSDN, for this type CredentialBlob can only be read by the authentication packages.
                 //I am not able to get the password even while running in elevated mode. more to come.
-                var cred = CredentialManager.GetCredentials("192.168.23.1",CredentialManager.CredentialType.Windows);
+                var cred = CredentialManager.GetCredentials("192.168.23.1", CredentialManager.CredentialType.Windows);
                 Assert.IsNotNull(cred, "GetCredential failed");
                 Assert.IsTrue(uName == cred.UserName && pwd == cred.Password && domain == cred.Domain, "Saved and retreived data doesn't match");
             }
@@ -138,5 +138,16 @@ namespace CredentialManagerTest
                 return;
             }
         }
+
+
+        [TestMethod, TestCategory("AppVeyor")]
+        public void TestGetCredentials_NullUserName()
+        {
+            var cred = new NetworkCredential(string.Empty, "P@$$w0rd");
+            var res = CredentialManager.SaveCredentials("TestCredWithoutUserName", cred);
+            var cred1 = CredentialManager.GetCredentials("TestCredWithoutUserName");
+            Assert.IsTrue(cred1.UserName == cred.UserName && cred1.Password== cred.Password && cred1.Domain == cred.Domain, "Saved and retreived data doesn't match");
+        }
+
     }
 }

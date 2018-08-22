@@ -27,12 +27,12 @@ namespace AdysTech.CredentialManager
             // Setup the flags and variables
             credUI.cbSize = Marshal.SizeOf(credUI);
             int errorcode = 0;
-            uint dialogReturn;
             uint authPackage = 0;
 
             IntPtr outCredBuffer = new IntPtr();
             uint outCredSize;
-            var flags = NativeCode.PromptForWindowsCredentialsFlags.GenericCredentials | NativeCode.PromptForWindowsCredentialsFlags.EnumerateCurrentUser;
+            var flags = NativeCode.PromptForWindowsCredentialsFlags.GenericCredentials | 
+                    NativeCode.PromptForWindowsCredentialsFlags.EnumerateCurrentUser;
             flags = save ? flags | NativeCode.PromptForWindowsCredentialsFlags.ShowCheckbox : flags;
 
             // Setup the flags and variables
@@ -64,7 +64,7 @@ namespace AdysTech.CredentialManager
                     if (String.IsNullOrWhiteSpace(domain))
                     {
                         Debug.WriteLine("Domain null");
-                        if (!ParseUserName(usernameBuf.ToString(), maxUserName, maxDomain, out user, out domain))
+                        if (!ParseUserName(usernameBuf.ToString(), usernameBuf.Capacity, domainBuf.Capacity, out user, out domain))
                             user = usernameBuf.ToString();
                         password = passwordBuf.ToString();
                     }
@@ -105,7 +105,13 @@ namespace AdysTech.CredentialManager
 
         internal static bool PromptForCredentials(string target, ref bool save, out string user, out string password, out string domain)
         {
-            return PromptForCredentials(target, new NativeCode.CredentialUIInfo(), ref save, out user, out password, out domain);
+            NativeCode.CredentialUIInfo credUI = new NativeCode.CredentialUIInfo();
+            credUI.hwndParent = IntPtr.Zero;
+            credUI.pszMessageText = " ";
+            credUI.pszCaptionText = " ";
+            credUI.hbmBanner = IntPtr.Zero;
+            credUI.hwndParent = IntPtr.Zero;
+            return PromptForCredentials(target, credUI, ref save, out user, out password, out domain);
         }
 
         internal static bool PromptForCredentials(string target, ref bool save, string Message, string Caption, out string user, out string password, out string domain)
@@ -113,6 +119,8 @@ namespace AdysTech.CredentialManager
             NativeCode.CredentialUIInfo credUI = new NativeCode.CredentialUIInfo();
             credUI.pszMessageText = Message;
             credUI.pszCaptionText = Caption;
+            credUI.hwndParent = IntPtr.Zero;
+            credUI.hbmBanner = IntPtr.Zero;
             return PromptForCredentials(target, credUI, ref save, out user, out password, out domain);
         }
 
@@ -253,22 +261,25 @@ namespace AdysTech.CredentialManager
                     {
                         Credential cred = critCred.GetCredential();
                         passwd = cred.CredentialBlob;
-                        var user = cred.UserName;                        
-                        StringBuilder userBuilder = new StringBuilder(cred.UserName.Length + 2);
-                        StringBuilder domainBuilder = new StringBuilder(cred.UserName.Length + 2);
-                                                
-                        var ret1 = NativeCode.CredUIParseUserName(user, userBuilder, userBuilder.Capacity, domainBuilder, domainBuilder.Capacity);
-                        lastError = Marshal.GetLastWin32Error();
+                        if (!String.IsNullOrEmpty(cred.UserName))
+                        {
+                            var user = cred.UserName;
+                            StringBuilder userBuilder = new StringBuilder(cred.UserName.Length + 2);
+                            StringBuilder domainBuilder = new StringBuilder(cred.UserName.Length + 2);
 
-                        //assuming invalid account name to be not meeting condition for CredUIParseUserName
-                        //"The name must be in UPN or down-level format, or a certificate"
-                        if (ret1 == NativeCode.CredentialUIReturnCodes.InvalidAccountName)
-                            userBuilder.Append(user);
-                        else if ((uint)ret1 > 0)
-                            throw new Win32Exception(lastError, "CredUIParseUserName throw an error");
+                            var ret1 = NativeCode.CredUIParseUserName(user, userBuilder, userBuilder.Capacity, domainBuilder, domainBuilder.Capacity);
+                            lastError = Marshal.GetLastWin32Error();
 
-                        username = userBuilder.ToString();
-                        domain = domainBuilder.ToString();
+                            //assuming invalid account name to be not meeting condition for CredUIParseUserName
+                            //"The name must be in UPN or down-level format, or a certificate"
+                            if (ret1 == NativeCode.CredentialUIReturnCodes.InvalidAccountName)
+                                userBuilder.Append(user);
+                            else if ((uint)ret1 > 0)
+                                throw new Win32Exception(lastError, "CredUIParseUserName throw an error");
+
+                            username = userBuilder.ToString();
+                            domain = domainBuilder.ToString();
+                        }
                         return new NetworkCredential(username, passwd, domain);
                     }
                 }
