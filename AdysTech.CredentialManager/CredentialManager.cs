@@ -261,22 +261,25 @@ namespace AdysTech.CredentialManager
                     {
                         Credential cred = critCred.GetCredential();
                         passwd = cred.CredentialBlob;
-                        var user = cred.UserName;                        
-                        StringBuilder userBuilder = new StringBuilder(cred.UserName.Length + 2);
-                        StringBuilder domainBuilder = new StringBuilder(cred.UserName.Length + 2);
-                                                
-                        var ret1 = NativeCode.CredUIParseUserName(user, userBuilder, userBuilder.Capacity, domainBuilder, domainBuilder.Capacity);
-                        lastError = Marshal.GetLastWin32Error();
+                        if (!String.IsNullOrEmpty(cred.UserName))
+                        {
+                            var user = cred.UserName;
+                            StringBuilder userBuilder = new StringBuilder(cred.UserName.Length + 2);
+                            StringBuilder domainBuilder = new StringBuilder(cred.UserName.Length + 2);
 
-                        //assuming invalid account name to be not meeting condition for CredUIParseUserName
-                        //"The name must be in UPN or down-level format, or a certificate"
-                        if (ret1 == NativeCode.CredentialUIReturnCodes.InvalidAccountName)
-                            userBuilder.Append(user);
-                        else if ((uint)ret1 > 0)
-                            throw new Win32Exception(lastError, "CredUIParseUserName throw an error");
+                            var ret1 = NativeCode.CredUIParseUserName(user, userBuilder, userBuilder.Capacity, domainBuilder, domainBuilder.Capacity);
+                            lastError = Marshal.GetLastWin32Error();
 
-                        username = userBuilder.ToString();
-                        domain = domainBuilder.ToString();
+                            //assuming invalid account name to be not meeting condition for CredUIParseUserName
+                            //"The name must be in UPN or down-level format, or a certificate"
+                            if (ret1 == NativeCode.CredentialUIReturnCodes.InvalidAccountName)
+                                userBuilder.Append(user);
+                            else if ((uint)ret1 > 0)
+                                throw new Win32Exception(lastError, "CredUIParseUserName throw an error");
+
+                            username = userBuilder.ToString();
+                            domain = domainBuilder.ToString();
+                        }
                         return new NetworkCredential(username, passwd, domain);
                     }
                 }
