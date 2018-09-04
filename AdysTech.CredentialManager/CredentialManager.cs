@@ -227,7 +227,7 @@ namespace AdysTech.CredentialManager
         /// </summary>
         /// <param name="target">Name of the application/Url where the credential is used for</param>
         /// <param name="type">Credential type</param>
-        /// <returns>null if target not found, else stored credentials</returns>
+        /// <returns>return the credentials if success, null if target not found, throw if failed to read stored credentials</returns>
         public static NetworkCredential GetCredentials(string target, CredentialType type = CredentialType.Generic)
         {
             IntPtr nCredPtr;
@@ -240,13 +240,15 @@ namespace AdysTech.CredentialManager
             if (!isSuccess)
             {
                 var lastError = Marshal.GetLastWin32Error();
+                if (lastError == (int) NativeCode.CredentialUIReturnCodes.NotFound)
+                    return null;
                 throw new Win32Exception(lastError,
                     String.Format("'CredRead' call throw an error (Error code: {0})", lastError));
             }
 
             try
             {
-                using (CriticalCredentialHandle critCred = new CriticalCredentialHandle(nCredPtr))
+                using (var critCred = new CriticalCredentialHandle(nCredPtr))
                 {
                     Credential cred = critCred.GetCredential();
                     passwd = cred.CredentialBlob;
