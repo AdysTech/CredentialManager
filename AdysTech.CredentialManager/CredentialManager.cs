@@ -228,7 +228,7 @@ namespace AdysTech.CredentialManager
             }
             else
             {
-                string message = string.Format("CredWrite failed with the error code {0}.", lastError);
+                string message = string.Format("'CredWrite' call throw an error (Error code: {0})", lastError);
                 throw new Exception(message);
             }
         }
@@ -250,7 +250,7 @@ namespace AdysTech.CredentialManager
             bool ret = NativeCode.CredRead(Target, (NativeCode.CredentialType) type, 0, out nCredPtr);
             int lastError = Marshal.GetLastWin32Error();
             if (!ret)
-                throw new Win32Exception(lastError, "CredDelete throw an error");
+                throw new Win32Exception(lastError, string.Format("'CredRead' call throw an error (Error code: {0})", lastError));
             // If the API was successful then...
             if (ret)
             {
@@ -302,7 +302,7 @@ namespace AdysTech.CredentialManager
             var ret = NativeCode.CredDelete(Target, NativeCode.CredentialType.Generic, 0);
             int lastError = Marshal.GetLastWin32Error();
             if (!ret)
-                throw new Win32Exception(lastError, "CredDelete throw an error");
+                throw new Win32Exception(lastError, string.Format("'CredDelete' call throw an error (Error code: {0})", lastError));
             return ret;
         }
 
