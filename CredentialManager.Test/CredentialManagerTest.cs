@@ -149,5 +149,33 @@ namespace CredentialManagerTest
             Assert.IsTrue(cred1.UserName == cred.UserName && cred1.Password== cred.Password && cred1.Domain == cred.Domain, "Saved and retreived data doesn't match");
         }
 
+        [TestMethod]
+        public void Test_ParseUserName_supports_long_name()
+        {
+            var longUserName = "ksdqkdbkbqskdbqskdqsdsqdqsdjsqdjqsdjlqsjd@domain.com";
+            Assert.IsTrue(CredentialManager.ParseUserName(longUserName, 100, 100, out string user, out string domain));
+
+            Assert.AreEqual(longUserName, user);
+            Assert.AreEqual("", domain);
+        }
+
+        [TestMethod]
+        public void Test_ParseUserName_returns_false_if_buffer_is_too_small()
+        {
+            var longUserName = "ksdqkdbkbqskdbqskdqsdsqdqsdjsqdjqsdjlqsjd@domain.com";
+            Assert.IsFalse(CredentialManager.ParseUserName(longUserName, 10, 100, out string user, out string domain));
+            Assert.AreEqual("", user);
+            Assert.AreEqual("", domain);
+        }
+
+        [TestMethod]
+        public void Test_ParseUserName_supports_domain_name()
+        {
+            Assert.IsTrue(CredentialManager.ParseUserName("domain.com\\mike", 100, 100, out string user, out string domain));
+
+            Assert.AreEqual("mike", user);
+            Assert.AreEqual("domain.com", domain);
+        }
+
     }
 }
