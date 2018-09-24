@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using AdysTech.CredentialManager;
 using System.Net;
@@ -153,7 +153,9 @@ namespace CredentialManagerTest
         public void Test_ParseUserName_supports_long_name()
         {
             var longUserName = "ksdqkdbkbqskdbqskdqsdsqdqsdjsqdjqsdjlqsjd@domain.com";
-            Assert.IsTrue(CredentialManager.ParseUserName(longUserName, 100, 100, out string user, out string domain));
+            string domain;
+            string user;
+            Assert.IsTrue(CredentialManager.ParseUserName(longUserName, 100, 100, out user, out domain));
 
             Assert.AreEqual(longUserName, user);
             Assert.AreEqual("", domain);
@@ -163,7 +165,9 @@ namespace CredentialManagerTest
         public void Test_ParseUserName_returns_false_if_buffer_is_too_small()
         {
             var longUserName = "ksdqkdbkbqskdbqskdqsdsqdqsdjsqdjqsdjlqsjd@domain.com";
-            Assert.IsFalse(CredentialManager.ParseUserName(longUserName, 10, 100, out string user, out string domain));
+            string domain;
+            string user;
+            Assert.IsFalse(CredentialManager.ParseUserName(longUserName, 10, 100, out user, out domain));
             Assert.AreEqual("", user);
             Assert.AreEqual("", domain);
         }
@@ -171,7 +175,9 @@ namespace CredentialManagerTest
         [TestMethod]
         public void Test_ParseUserName_supports_domain_name()
         {
-            Assert.IsTrue(CredentialManager.ParseUserName("domain.com\\mike", 100, 100, out string user, out string domain));
+            string user;
+            string domain;
+            Assert.IsTrue(CredentialManager.ParseUserName("domain.com\\mike", 100, 100, out user, out domain));
 
             Assert.AreEqual("mike", user);
             Assert.AreEqual("domain.com", domain);
