@@ -149,7 +149,7 @@ namespace CredentialManagerTest
             Assert.IsTrue(cred1.UserName == cred.UserName && cred1.Password== cred.Password && cred1.Domain == cred.Domain, "Saved and retreived data doesn't match");
         }
 
-        [TestMethod]
+        [TestMethod, TestCategory("AppVeyor")]
         public void Test_ParseUserName_supports_long_name()
         {
             var longUserName = "ksdqkdbkbqskdbqskdqsdsqdqsdjsqdjqsdjlqsjd@domain.com";
@@ -161,7 +161,7 @@ namespace CredentialManagerTest
             Assert.AreEqual("", domain);
         }
 
-        [TestMethod]
+        [TestMethod, TestCategory("AppVeyor")]
         public void Test_ParseUserName_returns_false_if_buffer_is_too_small()
         {
             var longUserName = "ksdqkdbkbqskdbqskdqsdsqdqsdjsqdjqsdjlqsjd@domain.com";
@@ -172,7 +172,7 @@ namespace CredentialManagerTest
             Assert.AreEqual("", domain);
         }
 
-        [TestMethod]
+        [TestMethod, TestCategory("AppVeyor")]
         public void Test_ParseUserName_supports_domain_name()
         {
             string user;
