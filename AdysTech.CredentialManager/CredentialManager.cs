@@ -84,10 +84,10 @@ namespace AdysTech.CredentialManager
             return false;
         }
 
-        private static bool ParseUserName(string usernameBuf, int maxUserName, int maxDomain, out string user, out string domain)
+        internal static bool ParseUserName(string usernameBuf, int maxUserName, int maxDomain, out string user, out string domain)
         {
-            var userBuilder = new StringBuilder();
-            var domainBuilder = new StringBuilder();
+            var userBuilder = new StringBuilder(maxUserName);
+            var domainBuilder = new StringBuilder(maxDomain);
             user = String.Empty;
             domain = String.Empty;
 
