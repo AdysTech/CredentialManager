@@ -148,7 +148,7 @@ namespace AdysTech.CredentialManager
             return PromptForCredentials(target, credUI, ref save, ref user, out password, out domain);
         }
 
-        internal static bool PromptForCredentials(string target, ref bool save, string message, string caption, ref string user, ref string password, out string domain)
+        internal static bool PromptForCredentials(string target, ref bool save, string message, string caption, ref string user, out string password, out string domain)
         {
             var credUI = new NativeCode.CredentialUIInfo
             {
@@ -182,8 +182,8 @@ namespace AdysTech.CredentialManager
         /// <returns>NetworkCredential object containing the user name, </returns>
         public static NetworkCredential PromptForCredentials(string target, ref bool save, string message, string caption)
         {
-            string username = "", password = "", domain;
-            return PromptForCredentials(target, ref save, message, caption, ref username, ref password, out domain) ? new NetworkCredential(username, password, domain) : null;
+            string username = "", password, domain;
+            return PromptForCredentials(target, ref save, message, caption, ref username, out password, out domain) ? new NetworkCredential(username, password, domain) : null;
         }
 
         /// <summary>
@@ -197,8 +197,8 @@ namespace AdysTech.CredentialManager
         /// <returns>NetworkCredential object containing the user name, </returns>
         public static NetworkCredential PromptForCredentials(string target, ref bool save, string message, string caption, string defaultUserName)
         {
-            string username = defaultUserName, password = "", domain;
-            return PromptForCredentials(target, ref save, message, caption, ref username, ref password, out domain) ? new NetworkCredential(username, password, domain) : null;
+            string username = defaultUserName, password, domain;
+            return PromptForCredentials(target, ref save, message, caption, ref username, out password, out domain) ? new NetworkCredential(username, password, domain) : null;
         }
 
         /// <summary>
