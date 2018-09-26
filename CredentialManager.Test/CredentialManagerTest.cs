@@ -118,6 +118,35 @@ namespace CredentialManagerTest
             }
         }
 
+        [TestMethod]
+        public void IntegrationTest_with_prefilled_username()
+        {
+            try
+            {
+                bool save = true;
+                var cred = CredentialManager.PromptForCredentials("Some Webservice", ref save, "Please provide credentials", "Credentials for service", "mike.flemming@domain.com");
+                Assert.IsNotNull(cred, "PromptForCredentials failed");
+                if (save)
+                {
+                    var usr = cred.UserName;
+                    var pwd = cred.Password;
+                    var dmn = cred.Domain;
+                    Debug.WriteLine("Usr:{0}, Pwd{1}, Dmn{2}", usr, pwd, dmn);
+                    Assert.IsTrue(CredentialManager.SaveCredentials("TestSystem", cred), "SaveCredential failed");
+                    cred = CredentialManager.GetCredentials("TestSystem");
+                    Assert.IsNotNull(cred, "GetCredential failed");
+                    Assert.IsTrue(usr == cred.UserName && pwd == cred.Password && dmn == cred.Domain, "Saved and retreived data doesn't match");
+                }
+
+            }
+            catch (Exception e)
+            {
+                Assert.Fail("Unexpected exception of type {0} caught: {1} on {2}",
+                    e.GetType(), e.Message, e.StackTrace);
+                return;
+            }
+        }
+
         public void TestGetCredentials_Windows()
         {
 
