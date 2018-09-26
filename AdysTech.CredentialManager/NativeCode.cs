@@ -70,6 +70,15 @@ namespace AdysTech.CredentialManager
                 StringBuilder domain,
                 int domainMaxChars);
 
+        [DllImport("credui.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern bool CredPackAuthenticationBuffer(
+            Int32 dwFlags,
+            StringBuilder pszUserName,
+            StringBuilder pszPassword,
+            IntPtr pPackedCredentials,
+            ref Int32 pcbPackedCredentials
+        );
+
         [DllImport ("credui.dll", CharSet = CharSet.Auto)]
         internal static extern bool CredUnPackAuthenticationBuffer(int dwFlags,
             IntPtr pAuthBuffer,
@@ -85,8 +94,8 @@ namespace AdysTech.CredentialManager
         internal static extern int CredUIPromptForWindowsCredentials(ref CredentialUIInfo creditUR,
             int authError,
             ref uint authPackage,
-            IntPtr InAuthBuffer,
-            uint InAuthBufferSize,
+            IntPtr inAuthBuffer,
+            int inAuthBufferSize,
             out IntPtr refOutAuthBuffer,
             out uint refOutAuthBufferSize,
             ref bool fSave,
