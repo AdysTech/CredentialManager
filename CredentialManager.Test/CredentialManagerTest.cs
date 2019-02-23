@@ -69,7 +69,6 @@ namespace CredentialManagerTest
         /// <summary>
         /// This test assumes you have a Generic Credential for https://github.com stored on your system.
         /// </summary>
-        [TestMethod, TestCategory("AppVeyor")]
         public void TestEnumerateCredentialWithTarget()
         {
             try

@@ -314,6 +314,11 @@ namespace AdysTech.CredentialManager
             }
         }
 
+        /// <summary>
+        /// Enumerate the specified stored credentials in the Windows Credential store
+        /// </summary>
+        /// <param name="target">Name of the application or URL for which the credential is used</param>
+        /// <returns>Return a <see cref="List{NetworkCredential}"/> if success, null if target not found, throw if failed to read stored credentials</returns>
         public static List<NetworkCredential> EnumerateCredentials(string target = null)
         {
             IntPtr pCredentials = IntPtr.Zero;
