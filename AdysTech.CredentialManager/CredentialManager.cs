@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -302,33 +304,51 @@ namespace AdysTech.CredentialManager
                 using (var critCred = new CriticalCredentialHandle(nCredPtr))
                 {
                     Credential cred = critCred.GetCredential();
-                    passwd = cred.CredentialBlob;
-                    if (!String.IsNullOrEmpty(cred.UserName))
-                    {
-                        var user = cred.UserName;
-                        StringBuilder userBuilder = new StringBuilder(cred.UserName.Length + 2);
-                        StringBuilder domainBuilder = new StringBuilder(cred.UserName.Length + 2);
 
-                        var returnCode = NativeCode.CredUIParseUserName(user, userBuilder, userBuilder.Capacity, domainBuilder, domainBuilder.Capacity);
-                        var lastError = Marshal.GetLastWin32Error();
-
-                        //assuming invalid account name to be not meeting condition for CredUIParseUserName
-                        //"The name must be in UPN or down-level format, or a certificate"
-                        if (returnCode == NativeCode.CredentialUIReturnCodes.InvalidAccountName)
-                            userBuilder.Append(user);
-                        else if (returnCode != 0)
-                            throw new Win32Exception(lastError, String.Format("CredUIParseUserName throw an error (Error code: {0})", lastError));
-
-                        username = userBuilder.ToString();
-                        domain = domainBuilder.ToString();
-                    }
-                    return new NetworkCredential(username, passwd, domain);
+                    return cred.ToNetworkCredential();
                 }
             }
-            catch(Exception)
+            catch (Exception)
             {
                 return null;
             }
+        }
+
+        public static List<NetworkCredential> EnumerateCredentials(string target = null)
+        {
+            IntPtr pCredentials = IntPtr.Zero;
+            uint count = 0;
+
+            var success = NativeCode.CredEnumerate(target, 0, out count, out pCredentials);
+
+            if (!success)
+            {
+                var lastError = Marshal.GetLastWin32Error();
+                if (lastError == (int)NativeCode.CredentialUIReturnCodes.NotFound)
+                {
+                    return null;
+                }
+
+                throw new Win32Exception(lastError, 
+                    string.Format("'CredEnumerate' call throw an error (Error code: {0})", lastError));
+            }
+
+            List<NetworkCredential> networkCredentials = new List<NetworkCredential>();
+            Credential[] credentials;
+
+            try
+            {
+                using (var criticalSection = new CriticalCredentialHandle(pCredentials))
+                {
+                    credentials = criticalSection.EnumerateCredentials(count);
+                }
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+
+            return credentials.Select(c => c.ToNetworkCredential()).ToList();
         }
 
         /// <summary>

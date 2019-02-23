@@ -35,6 +35,29 @@ namespace AdysTech.CredentialManager
             }
         }
 
+        internal Credential[] EnumerateCredentials(uint size)
+        {
+            if (!IsInvalid)
+            {
+                var credentialArray = new Credential[size];
+
+                for (int i = 0; i < size; i++)
+                {
+                    IntPtr ptrPlc = Marshal.ReadIntPtr(handle, i * IntPtr.Size);
+
+                    var nc = (NativeCode.NativeCredential)Marshal.PtrToStructure(ptrPlc, typeof(NativeCode.NativeCredential));
+
+                    credentialArray[i] = new Credential(nc);
+                }
+
+                return credentialArray;
+            }
+            else
+            {
+                throw new InvalidOperationException("Invalid CriticalHandle!");
+            }
+        }
+
         // Perform any specific actions to release the handle in the ReleaseHandle method.
         // Often, you need to use Pinvoke to make a call into the Win32 API to release the 
         // handle. In this case, however, we can use the Marshal class to release the unmanaged memory.
