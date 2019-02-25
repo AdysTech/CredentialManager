@@ -42,7 +42,7 @@ namespace AdysTech.CredentialManager
             {
                 LastWritten = DateTime.FromFileTime((long)((ulong)ncred.LastWritten.dwHighDateTime << 32 | (ulong)ncred.LastWritten.dwLowDateTime));
             }
-            catch (ArgumentOutOfRangeException e)
+            catch (ArgumentOutOfRangeException)
             { }
         }
 
