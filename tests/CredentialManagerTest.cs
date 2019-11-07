@@ -168,8 +168,8 @@ namespace CredentialManagerTest
                     var pwd = cred.Password;
                     var dmn = cred.Domain;
                     Debug.WriteLine("Usr:{0}, Pwd{1}, Dmn{2}", usr, pwd, dmn);
-                    Assert.IsTrue(CredentialManager.SaveCredentials("TestSystem", cred), "SaveCredential failed");
-                    cred = CredentialManager.GetCredentials("TestSystem");
+                    Assert.IsTrue(CredentialManager.SaveCredentials("TestSystem1", cred), "SaveCredential failed");
+                    cred = CredentialManager.GetCredentials("TestSystem1");
                     Assert.IsNotNull(cred, "GetCredential failed");
                     Assert.IsTrue(usr == cred.UserName && pwd == cred.Password && dmn == cred.Domain, "Saved and retreived data doesn't match");
                 }
