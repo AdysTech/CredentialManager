@@ -41,7 +41,7 @@ namespace AdysTech.CredentialManager
             try
             {
 #pragma warning disable CS0675 // Bitwise-or operator used on a sign-extended operand
-                LastWritten = DateTime.FromFileTime((long)((ulong)ncred.LastWritten.dwHighDateTime << 32 | (ulong)ncred.LastWritten.dwLowDateTime));
+                LastWritten = DateTime.FromFileTime((long)((ulong)ncred.LastWritten.dwHighDateTime << 32 | (uint)ncred.LastWritten.dwLowDateTime));
 #pragma warning restore CS0675 // Bitwise-or operator used on a sign-extended operand
             }
             catch (ArgumentOutOfRangeException)
