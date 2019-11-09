@@ -19,11 +19,10 @@ test:
       - AppVeyor
 deploy:
 - provider: NuGet
-  server: https://www.nuget.org/packages/AdysTech.CredentialManager
   api_key:
     secure: nlBDuJJE7GoAtSvHKJDjdutExvlEQErL8Q9gFqmhURY4xUgFT946cs2mLeQ2Qezi
   on:
     branch: master
 artifacts:
-- path: AdysTech.CredentialManager\bin\Debug
+- path: src\AdysTech.CredentialManager\bin\Debug
   name: CredentialManager
