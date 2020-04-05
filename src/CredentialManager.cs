@@ -254,13 +254,14 @@ namespace AdysTech.CredentialManager
         /// </summary>
         /// <param name="target">Name of the application/Url where the credential is used for</param>
         /// <param name="credential">Credential to store</param>
+        /// <param name="type">Credential type</param>
         /// <returns>True:Success, throw if failed</returns>
-        public static bool SaveCredentials(string target, NetworkCredential credential)
+        public static bool SaveCredentials(string target, NetworkCredential credential, CredentialType type = CredentialType.Generic)
         {
             // Go ahead with what we have are stuff it into the CredMan structures.
             var cred = new Credential(credential)
             {
-                TargetName = target, Persist = NativeCode.Persistance.Entrprise
+                TargetName = target, Persist = NativeCode.Persistance.Entrprise, Type = (NativeCode.CredentialType) type
             };
             NativeCode.NativeCredential ncred = cred.GetNativeCredential();
 
