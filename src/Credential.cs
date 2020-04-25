@@ -1,43 +1,36 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Net;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 
 namespace AdysTech.CredentialManager
 {
-    internal class Credential
+    internal class Credential : ICredential
     {
+
+        public CredentialType Type { get; set; }
+        public string TargetName { get; set; }
+        public string Comment { get; set; }
+        public DateTime LastWritten { get; set; }
+        public string CredentialBlob { get; set; }
+        public Persistance Persistance { get; set; }
+        public IDictionary<string, Object> Attributes { get; set; }
+        public string UserName { get; set; }
+
+
         public UInt32 Flags;
-        public NativeCode.CredentialType Type;
-        public string TargetName;
-        public string Comment;
-        public DateTime LastWritten;
-        public UInt32 CredentialBlobSize;
-        public string CredentialBlob;
-        public NativeCode.Persistance Persist;
-        public UInt32 AttributeCount;
-        public IntPtr Attributes;
         public string TargetAlias;
-        public string UserName;
 
-        public Credential()
-        {
-
-        }
 
         internal Credential(NativeCode.NativeCredential ncred)
         {
-            CredentialBlobSize = ncred.CredentialBlobSize;
-            if (ncred.CredentialBlobSize > 2)
-            {
-                CredentialBlob = Marshal.PtrToStringUni(ncred.CredentialBlob,(int)ncred.CredentialBlobSize / 2);
-            }
-            
-            UserName = Marshal.PtrToStringUni(ncred.UserName);
-            TargetName = Marshal.PtrToStringUni(ncred.TargetName);
-            TargetAlias = Marshal.PtrToStringUni(ncred.TargetAlias);
-            Type = ncred.Type;
             Flags = ncred.Flags;
-            Persist = (NativeCode.Persistance)ncred.Persist;
+            TargetName = ncred.TargetName;
+            Comment = ncred.Comment;
             try
             {
 #pragma warning disable CS0675 // Bitwise-or operator used on a sign-extended operand
@@ -46,47 +39,228 @@ namespace AdysTech.CredentialManager
             }
             catch (ArgumentOutOfRangeException)
             { }
+
+
+            var CredentialBlobSize = ncred.CredentialBlobSize;
+            if (ncred.CredentialBlobSize > 2)
+            {
+                CredentialBlob = Marshal.PtrToStringUni(ncred.CredentialBlob, (int)ncred.CredentialBlobSize / 2);
+            }
+            Persistance = (Persistance)ncred.Persist;
+            var AttributeCount = ncred.AttributeCount;
+            if (AttributeCount > 0)
+            {
+                try
+                {
+                    var formatter = new BinaryFormatter();
+                    var attribSize = Marshal.SizeOf(typeof(NativeCode.NativeCredentialAttribute));
+                    Attributes = new Dictionary<string, Object>();
+                    byte[] rawData = new byte[AttributeCount * attribSize];
+                    var buffer = Marshal.AllocHGlobal(attribSize);
+                    Marshal.Copy(ncred.Attributes, rawData, (int)0, (int)AttributeCount * attribSize);
+                    for (int i = 0; i < AttributeCount; i++)
+                    {
+                        Marshal.Copy(rawData, i * attribSize, buffer, attribSize);
+                        var attr = (NativeCode.NativeCredentialAttribute)Marshal.PtrToStructure(buffer,
+                         typeof(NativeCode.NativeCredentialAttribute));
+                        var key = attr.Keyword;
+                        var val = new byte[attr.ValueSize];
+                        Marshal.Copy(attr.Value, val, (int)0, (int)attr.ValueSize);
+                        using var stream = new MemoryStream(val, false);
+                        Attributes.Add(key, formatter.Deserialize(stream));
+                    }
+                    Marshal.FreeHGlobal(buffer);
+                    rawData = null;
+                }
+                catch
+                {
+
+                }
+            }
+            TargetAlias = ncred.TargetAlias;
+            UserName = ncred.UserName;
         }
 
         public Credential(System.Net.NetworkCredential credential)
         {
             CredentialBlob = credential.Password;
             UserName = String.IsNullOrWhiteSpace(credential.Domain) ? credential.UserName : credential.Domain + "\\" + credential.UserName;
-            CredentialBlobSize = (UInt32)Encoding.Unicode.GetBytes(credential.Password).Length;
-            AttributeCount = 0;
-            Attributes = IntPtr.Zero;
+            Attributes = null;
             Comment = null;
             TargetAlias = null;
-            Type = NativeCode.CredentialType.Generic;
-            Persist = NativeCode.Persistance.Session;
+            Type = CredentialType.Generic;
+            Persistance = Persistance.Session;
         }
 
-        /// <summary>
-        /// This method derives a NativeCredential instance from a given Credential instance.
-        /// </summary>
-        /// <param name="cred">The managed Credential counterpart containing data to be stored.</param>
-        /// <returns>A NativeCredential instance that is derived from the given Credential
-        /// instance.</returns>
-        internal NativeCode.NativeCredential GetNativeCredential()
+        public Credential(ICredential credential)
         {
-            NativeCode.NativeCredential ncred = new NativeCode.NativeCredential();
-            ncred.AttributeCount = 0;
-            ncred.Attributes = IntPtr.Zero;
-            ncred.Comment = IntPtr.Zero;
-            ncred.TargetAlias = IntPtr.Zero;
-            ncred.Type = this.Type;
-            ncred.Persist = (UInt32)this.Persist;
-            ncred.UserName = Marshal.StringToCoTaskMemUni(this.UserName);
-            ncred.TargetName = Marshal.StringToCoTaskMemUni(this.TargetName);
+            CredentialBlob = credential.CredentialBlob;
+            UserName = credential.UserName;
+            if (credential.Attributes?.Count > 0)
+            {
+                this.Attributes = new Dictionary<string, Object>();
+                foreach (var a in credential.Attributes)
+                {
+                    Attributes.Add(a);
+                }
+            }
+            Comment = credential.Comment;
+            TargetAlias = null;
+            Type = credential.Type;
+            Persistance = credential.Persistance;
+        }
+
+
+
+        public NetworkCredential ToNetworkCredential()
+        {
+            if (!string.IsNullOrEmpty(UserName))
+            {
+                var userBuilder = new StringBuilder(UserName.Length + 2);
+                var domainBuilder = new StringBuilder(UserName.Length + 2);
+
+                var returnCode = NativeCode.CredUIParseUserName(UserName, userBuilder, userBuilder.Capacity, domainBuilder, domainBuilder.Capacity);
+                var lastError = Marshal.GetLastWin32Error();
+
+                //assuming invalid account name to be not meeting condition for CredUIParseUserName
+                //"The name must be in UPN or down-level format, or a certificate"
+                if (returnCode == NativeCode.CredentialUIReturnCodes.InvalidAccountName)
+                {
+                    userBuilder.Append(UserName);
+                }
+                else if (returnCode != 0)
+                {
+                    throw new CredentialAPIException($"Unable to Parse UserName", "CredUIParseUserName", lastError);
+                }
+
+                return new NetworkCredential(userBuilder.ToString(), this.CredentialBlob, domainBuilder.ToString());
+            }
+            throw new InvalidOperationException($"Credential object not initialized!");
+        }
+
+        public bool SaveCredential()
+        {
+            IntPtr buffer = default(IntPtr);
+            GCHandle pinned = default(GCHandle);
+
+            if (!String.IsNullOrEmpty(this.Comment) && Encoding.Unicode.GetBytes(this.Comment).Length > 256)
+                throw new ArgumentException("Comment can't be more than 256 bytes long", "Comment");
+
+            if (String.IsNullOrEmpty(this.TargetName))
+                throw new ArgumentNullException("TargetName","TargetName can't be Null or Empty");
+            else if(this.TargetName.Length>32767)
+                throw new ArgumentNullException("TargetName can't be more than 32kB","TargetName");
+
+            if (String.IsNullOrEmpty(this.CredentialBlob))
+                throw new ArgumentNullException("CredentialBlob", "CredentialBlob can't be Null or Empty");
+
+            NativeCode.NativeCredential ncred = new NativeCode.NativeCredential
+            {
+                Comment = this.Comment,
+                TargetAlias = null,
+                Type = (UInt32)this.Type,
+                Persist = (UInt32)this.Persistance,
+                UserName = this.UserName,
+                TargetName = this.TargetName,
+                CredentialBlobSize = (UInt32)Encoding.Unicode.GetBytes(this.CredentialBlob).Length
+            };
+            if (ncred.CredentialBlobSize > 512)
+                throw new ArgumentException($"Credential can't be more than 512 bytes long", "CredentialBlob");
+
             ncred.CredentialBlob = Marshal.StringToCoTaskMemUni(this.CredentialBlob);
-            ncred.CredentialBlobSize = (UInt32)this.CredentialBlobSize;
             if (this.LastWritten != DateTime.MinValue)
             {
                 var fileTime = this.LastWritten.ToFileTimeUtc();
                 ncred.LastWritten.dwLowDateTime = (int)(fileTime & 0xFFFFFFFFL);
                 ncred.LastWritten.dwHighDateTime = (int)((fileTime >> 32) & 0xFFFFFFFFL);
             }
-            return ncred;
+
+            NativeCode.NativeCredentialAttribute[] nativeAttribs = null;
+            try
+            {
+                if (Attributes == null || Attributes.Count == 0)
+                {
+                    ncred.AttributeCount = 0;
+                    ncred.Attributes = IntPtr.Zero;
+                }
+                else
+                {
+                    if (Attributes.Count > 64)
+                        throw new ArgumentException("Credentials can't have more than 64 Attributes!!");
+
+                    ncred.AttributeCount = (UInt32)Attributes.Count;
+                    nativeAttribs = new NativeCode.NativeCredentialAttribute[Attributes.Count];
+                    var attribSize = Marshal.SizeOf(typeof(NativeCode.NativeCredentialAttribute));
+                    byte[] rawData = new byte[Attributes.Count * attribSize];
+                    buffer = Marshal.AllocHGlobal(attribSize);
+                    var formatter = new BinaryFormatter();
+
+                    var i = 0;
+                    foreach (var a in Attributes)
+                    {
+                        if (a.Key.Length > 256)
+                            throw new ArgumentException($"Attribute names can't be more than 256 bytes long. Error with key:{a.Key}", a.Key);
+                        if (a.Value == null)
+                            throw new ArgumentNullException(a.Key, $"Attribute value cant'be null. Error with key:{a.Key}");
+                        if (!a.Value.GetType().IsSerializable)
+                            throw new ArgumentException($"Attribute value must be Serializable. Error with key:{a.Key}", a.Key);
+
+                        using var stream = new MemoryStream();
+                        formatter.Serialize(stream, a.Value);
+                        var value = stream.ToArray();
+
+                        if (value.Length > 256)
+                            throw new ArgumentException($"Attribute values can't be more than 256 bytes long after serialization. Error with Value for key:{a.Key}", a.Key);
+
+                        var attrib = new NativeCode.NativeCredentialAttribute
+                        {
+                            Keyword = a.Key,
+                            ValueSize = (UInt32)value.Length
+                        };
+
+                        attrib.Value = Marshal.AllocHGlobal(value.Length);
+                        Marshal.Copy(value, 0, attrib.Value, value.Length);
+                        nativeAttribs[i] = attrib;
+
+                        Marshal.StructureToPtr(attrib, buffer, false);
+                        Marshal.Copy(buffer, rawData, i * attribSize, attribSize);
+                        i++;
+                    }
+                    pinned = GCHandle.Alloc(rawData, GCHandleType.Pinned);
+                    ncred.Attributes = pinned.AddrOfPinnedObject();
+                }
+                // Write the info into the CredMan storage.
+
+                if (NativeCode.CredWrite(ref ncred, 0))
+                {
+                    return true;
+                }
+                else
+                {
+                    int lastError = Marshal.GetLastWin32Error();
+                    throw new CredentialAPIException($"Unable to Save Credential", "CredWrite", lastError);
+                }
+            }
+
+            finally
+            {
+                if (ncred.CredentialBlob != default(IntPtr))
+                    Marshal.FreeCoTaskMem(ncred.CredentialBlob);
+                if (nativeAttribs != null)
+                {
+                    foreach (var a in nativeAttribs)
+                    {
+                        if (a.Value != default(IntPtr))
+                            Marshal.FreeHGlobal(a.Value);
+                    }
+                    if (pinned.IsAllocated)
+                        pinned.Free();
+                    if (buffer != default(IntPtr))
+                        Marshal.FreeHGlobal(buffer);
+                }
+            }
         }
     }
+
 }
+

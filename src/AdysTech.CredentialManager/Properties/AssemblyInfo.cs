@@ -32,8 +32,8 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.9.5.0")]
-[assembly: AssemblyFileVersion("1.9.5.0")]
+[assembly: AssemblyVersion("2.0.0.0")]
+[assembly: AssemblyFileVersion("2.0.0.0")]
 
 //[assembly: InternalsVisibleTo("CredentialManager.Test")] 
 [assembly: InternalsVisibleTo("CredentialManager.Test, PublicKey=0024000004800000940000000602000000240000525341310004000001000100BD5CAC7BD791BBF5443BD0DC379AD9DB0613F97DC6ED2597422DAB9C6535FE3EF53BB6128B977E26E97F59E2ADF8595A4D92219A55F98A548C509392D1CD031C6BC2032941E503A4C1764AFB443D7DF7D47271456636937C6465C8F3AAE63289F51C49E5146A533CB1214110025BB9991550FC0ED1C88E21C5AE42BDED2337C1")]

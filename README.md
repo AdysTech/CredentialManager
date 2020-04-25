@@ -38,5 +38,24 @@ CredentialManager.SaveCredentials ("TestSystem", cred);
 var cred = CredentialManager.GetCredentials ("TestSystem");
 ```            
 
-#### Latest Download
-[AdysTech.CredentialManager](https://ci.appveyor.com/api/buildjobs/so3ev8bmq51pp2im/artifacts/AdysTech.CredentialManager%2Fbin%2FCredentialManager.zip)
+With v2.0 release exposes raw credential, with additional information not available in normal `NetworkCredential` available in previous versions. This library also allows to store comments and additional attributes associated with a Credential object. The attributes are serialized using `BinaryFormatter` and API has 256 byte length. `BinaryFormatter` generates larger than what you think the object size is going to be, si keep an eye on that.
+
+Comments and attributes  are only accessible programmatically. Windows always supported such a feature (via `CREDENTIALW` [structure](https://docs.microsoft.com/en-us/windows/win32/api/wincred/ns-wincred-credentialw)) but `Windows Credential Manager applet` does not have any way to show this information to user. So if an user edits the saved credentials using control panel comments and attributes gets lost. The lack of this information may be used as a tamper check. Note that this information is accessible all programs with can read write to credential store, so don't assume the information is secure from everything. 
+
+#### 4. Save and retrieve credentials with comments and attributes
+```C#
+    var cred = (new NetworkCredential(uName, pwd, domain)).ToICredential();
+    cred.TargetName = "TestSystem_Attributes";
+    cred.Attributes = new Dictionary<string, Object>();
+    var sample = new SampleAttribute() { role = "regular", created = DateTime.UtcNow };
+    cred.Attributes.Add("sampleAttribute", sample);
+    cred.Comment = "This comment is only visible via API, not in Windows UI";
+    cred.SaveCredential();
+```  
+
+#### 5. Getting ICredential from previously saved credential
+```C#
+    var cred =  CredentialManager.GetICredential(TargetName);
+    cred.Comment = "Update the credential data and save back";
+    cred.SaveCredential();
+``` 

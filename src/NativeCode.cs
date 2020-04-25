@@ -40,7 +40,7 @@ namespace AdysTech.CredentialManager
             InvalidFlags = 1004
         }
 
-        [StructLayout (LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         internal struct CredentialUIInfo
         {
             public int cbSize;
@@ -50,7 +50,7 @@ namespace AdysTech.CredentialManager
             public IntPtr hbmBanner;
         }
 
-        [DllImport ("credui")]
+        [DllImport("credui", CharSet = CharSet.Unicode)]
         internal static extern CredentialUIReturnCodes CredUIPromptForCredentials(ref CredentialUIInfo creditUR,
           string targetName,
           IntPtr reserved1,
@@ -59,10 +59,10 @@ namespace AdysTech.CredentialManager
           int maxUserName,
           StringBuilder password,
           int maxPassword,
-          [MarshalAs (UnmanagedType.Bool)] ref bool pfSave,
+          [MarshalAs(UnmanagedType.Bool)] ref bool pfSave,
           CredentialUIFlags flags);
 
-        [DllImport ("credui.dll", EntryPoint = "CredUIParseUserNameW", CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport("credui.dll", EntryPoint = "CredUIParseUserNameW", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern CredentialUIReturnCodes CredUIParseUserName(
                 string userName,
                 StringBuilder user,
@@ -79,7 +79,7 @@ namespace AdysTech.CredentialManager
             ref Int32 pcbPackedCredentials
         );
 
-        [DllImport ("credui.dll", CharSet = CharSet.Auto)]
+        [DllImport("credui.dll", CharSet = CharSet.Unicode)]
         internal static extern bool CredUnPackAuthenticationBuffer(int dwFlags,
             IntPtr pAuthBuffer,
             uint cbAuthBuffer,
@@ -90,7 +90,7 @@ namespace AdysTech.CredentialManager
             StringBuilder pszPassword,
             ref int pcchMaxPassword);
 
-        [DllImport ("credui.dll", EntryPoint = "CredUIPromptForWindowsCredentialsW", CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport("credui.dll", EntryPoint = "CredUIPromptForWindowsCredentialsW", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern int CredUIPromptForWindowsCredentials(ref CredentialUIInfo creditUR,
             int authError,
             ref uint authPackage,
@@ -101,7 +101,7 @@ namespace AdysTech.CredentialManager
             ref bool fSave,
             PromptForWindowsCredentialsFlags flags);
 
-        [DllImport ("credui")]
+        [DllImport("credui", CharSet = CharSet.Unicode)]
         internal static extern CredentialUIReturnCodes CredUICmdLinePromptForCredentials(
             string targetName,
             IntPtr reserved1,
@@ -110,7 +110,7 @@ namespace AdysTech.CredentialManager
             int maxUserName,
             StringBuilder password,
             int maxPassword,
-            [MarshalAs (UnmanagedType.Bool)] ref bool pfSave,
+            [MarshalAs(UnmanagedType.Bool)] ref bool pfSave,
             CredentialUIFlags flags);
 
 
@@ -128,54 +128,56 @@ namespace AdysTech.CredentialManager
         }
 
 
-        internal enum CredentialType : uint
-        {
-            Generic = 1,
-            DomainPassword = 2,
-            DomainCertificate = 3
-        }
 
-        internal enum Persistance : uint
-        {
-            Session = 1,
-            LocalMachine = 2,
-            Entrprise = 3
-        }
 
-        [StructLayout (LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         internal struct NativeCredential
         {
             public UInt32 Flags;
-            public CredentialType Type;
-            public IntPtr TargetName;
-            public IntPtr Comment;
+            public UInt32 Type;
+            [MarshalAs(UnmanagedType.LPWStr)]
+            public string TargetName;
+            [MarshalAs(UnmanagedType.LPWStr)]
+            public string Comment;
             public System.Runtime.InteropServices.ComTypes.FILETIME LastWritten;
             public UInt32 CredentialBlobSize;
             public IntPtr CredentialBlob;
             public UInt32 Persist;
             public UInt32 AttributeCount;
             public IntPtr Attributes;
-            public IntPtr TargetAlias;
-            public IntPtr UserName;
+            [MarshalAs(UnmanagedType.LPWStr)]
+            public string TargetAlias;
+            [MarshalAs(UnmanagedType.LPWStr)]
+            public string UserName;
 
         }
 
-        [DllImport ("Advapi32.dll", EntryPoint = "CredDeleteW", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern bool CredDelete(string target, CredentialType type, int reservedFlag);
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        internal struct NativeCredentialAttribute
+        {
+            [MarshalAs(UnmanagedType.LPWStr)]
+            public string Keyword;
+            public UInt32 Flags;
+            public UInt32 ValueSize;
+            public IntPtr Value;
+        }
 
-        [DllImport ("Advapi32.dll", EntryPoint = "CredEnumerateW", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern bool CredEnumerate(string target, UInt32 flags, out UInt32 count, out IntPtr credentialsPtr);
+        [DllImport("Advapi32.dll", EntryPoint = "CredDeleteW", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern bool CredDelete([MarshalAs(UnmanagedType.LPWStr)] string target, uint type, int reservedFlag);
 
-        [DllImport ("Advapi32.dll", EntryPoint = "CredReadW", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern bool CredRead(string target, CredentialType type, int reservedFlag, out IntPtr CredentialPtr);
+        [DllImport("Advapi32.dll", EntryPoint = "CredEnumerateW", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern bool CredEnumerate([MarshalAs(UnmanagedType.LPWStr)] string target, UInt32 flags, out UInt32 count, out IntPtr credentialsPtr);
 
-        [DllImport ("Advapi32.dll", EntryPoint = "CredWriteW", CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport("Advapi32.dll", EntryPoint = "CredReadW", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern bool CredRead([MarshalAs(UnmanagedType.LPWStr)]string target, uint type, int reservedFlag, out IntPtr CredentialPtr);
+
+        [DllImport("Advapi32.dll", EntryPoint = "CredWriteW", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern bool CredWrite([In] ref NativeCredential userCredential, [In] UInt32 flags);
 
-        [DllImport ("Advapi32.dll", EntryPoint = "CredFree", SetLastError = true)]
+        [DllImport("Advapi32.dll", EntryPoint = "CredFree", SetLastError = true)]
         internal static extern bool CredFree([In] IntPtr cred);
 
-        [DllImport ("ole32.dll", EntryPoint = "CoTaskMemFree", SetLastError = true)]
+        [DllImport("ole32.dll", EntryPoint = "CoTaskMemFree", SetLastError = true)]
         internal static extern void CoTaskMemFree(IntPtr buffer);
     }
 }
