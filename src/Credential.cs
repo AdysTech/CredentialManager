@@ -135,7 +135,10 @@ namespace AdysTech.CredentialManager
 
                 return new NetworkCredential(userBuilder.ToString(), this.CredentialBlob, domainBuilder.ToString());
             }
-            throw new InvalidOperationException($"Credential object not initialized!");
+            else
+            {
+                return new NetworkCredential(UserName, this.CredentialBlob);
+            }
         }
 
         public bool SaveCredential()
