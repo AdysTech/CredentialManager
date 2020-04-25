@@ -9,17 +9,10 @@ using System.Text;
 
 namespace AdysTech.CredentialManager
 {
-    //ref: http://blogs.msdn.com/b/peerchan/archive/2005/11/01/487834.aspx
+    //ref: https://docs.microsoft.com/en-us/archive/blogs/peerchan/application-password-security
 
     public static class CredentialManager
     {
-        public enum CredentialType : uint
-        {
-            Generic = 1,
-            Windows = 2,
-            CertificateBased = 3
-        }
-
         private static bool PromptForCredentials(string target, NativeCode.CredentialUIInfo credUI, ref bool save, ref string user, out string password, out string domain)
         {
             password = string.Empty;
@@ -30,8 +23,7 @@ namespace AdysTech.CredentialManager
             int errorcode = 0;
             uint authPackage = 0;
 
-            var outCredBuffer = new IntPtr();
-            uint outCredSize;
+            IntPtr outCredBuffer;
             var flags = NativeCode.PromptForWindowsCredentialsFlags.GenericCredentials |
                     NativeCode.PromptForWindowsCredentialsFlags.EnumerateCurrentUser;
             flags = save ? flags | NativeCode.PromptForWindowsCredentialsFlags.ShowCheckbox : flags;
@@ -48,7 +40,7 @@ namespace AdysTech.CredentialManager
                 inCredBuffer,
                 inCredSize,
                 out outCredBuffer,
-                out outCredSize,
+                out uint outCredSize,
                 ref save,
                 flags);
 
@@ -145,7 +137,10 @@ namespace AdysTech.CredentialManager
         {
             var credUI = new NativeCode.CredentialUIInfo
             {
-                hwndParent = IntPtr.Zero, pszMessageText = " ", pszCaptionText = " ", hbmBanner = IntPtr.Zero
+                hwndParent = IntPtr.Zero,
+                pszMessageText = " ",
+                pszCaptionText = " ",
+                hbmBanner = IntPtr.Zero
             };
             return PromptForCredentials(target, credUI, ref save, ref user, out password, out domain);
         }
@@ -211,8 +206,7 @@ namespace AdysTech.CredentialManager
         public static NetworkCredential PromptForCredentialsConsole(string target)
         {
             var user = String.Empty;
-            var password = String.Empty;
-            var domain = String.Empty;
+            var domain = string.Empty;
 
             // Setup the flags and variables
             StringBuilder userPassword = new StringBuilder(), userID = new StringBuilder();
@@ -222,7 +216,7 @@ namespace AdysTech.CredentialManager
             // Prompt the user
             NativeCode.CredentialUIReturnCodes returnCode = NativeCode.CredUICmdLinePromptForCredentials(target, IntPtr.Zero, 0, userID, 100, userPassword, 100, ref save, flags);
 
-            password = userPassword.ToString();
+            string password = userPassword.ToString();
 
             StringBuilder userBuilder = new StringBuilder();
             StringBuilder domainBuilder = new StringBuilder();
@@ -244,7 +238,7 @@ namespace AdysTech.CredentialManager
                     throw new OutOfMemoryException();
 
                 case NativeCode.CredentialUIReturnCodes.InvalidParameter: // ulUserMaxChars or ulDomainMaxChars is zero OR userName, user, or domain is NULL.
-                    throw new ArgumentNullException("userName");
+                    throw new ArgumentException("userName");
             }
             return new NetworkCredential(user, password, domain);
         }
@@ -256,24 +250,20 @@ namespace AdysTech.CredentialManager
         /// <param name="credential">Credential to store</param>
         /// <param name="type">Credential type</param>
         /// <returns>True:Success, throw if failed</returns>
-        public static bool SaveCredentials(string target, NetworkCredential credential, CredentialType type = CredentialType.Generic)
+        public static ICredential SaveCredentials(string target, NetworkCredential credential, CredentialType type = CredentialType.Generic)
         {
             // Go ahead with what we have are stuff it into the CredMan structures.
             var cred = new Credential(credential)
             {
-                TargetName = target, Persist = NativeCode.Persistance.Entrprise, Type = (NativeCode.CredentialType) type
+                TargetName = target,
+                Persistance = Persistance.Enterprise,
+                Type = type
             };
-            NativeCode.NativeCredential ncred = cred.GetNativeCredential();
-
-            // Write the info into the CredMan storage.
-            if (NativeCode.CredWrite(ref ncred, 0))
+            if( cred.SaveCredential())
             {
-                return true;
+                return cred;
             }
-
-            int lastError = Marshal.GetLastWin32Error();
-            string message = String.Format("'CredWrite' call throw an error (Error code: {0})", lastError);
-            throw new Win32Exception(lastError, message);
+            return null;
         }
 
         /// <summary>
@@ -284,35 +274,7 @@ namespace AdysTech.CredentialManager
         /// <returns>return the credentials if success, null if target not found, throw if failed to read stored credentials</returns>
         public static NetworkCredential GetCredentials(string target, CredentialType type = CredentialType.Generic)
         {
-            IntPtr nCredPtr;
-            var username = String.Empty;
-            var passwd = String.Empty;
-            var domain = String.Empty;
-
-            // Make the API call using the P/Invoke signature
-            bool isSuccess = NativeCode.CredRead(target, (NativeCode.CredentialType) type, 0, out nCredPtr);
-            if (!isSuccess)
-            {
-                var lastError = Marshal.GetLastWin32Error();
-                if (lastError == (int) NativeCode.CredentialUIReturnCodes.NotFound)
-                    return null;
-                throw new Win32Exception(lastError,
-                    String.Format("'CredRead' call throw an error (Error code: {0})", lastError));
-            }
-
-            try
-            {
-                using (var critCred = new CriticalCredentialHandle(nCredPtr))
-                {
-                    Credential cred = critCred.GetCredential();
-
-                    return cred.ToNetworkCredential();
-                }
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return (GetICredential(target, type) as Credential).ToNetworkCredential();
         }
 
         /// <summary>
@@ -335,8 +297,7 @@ namespace AdysTech.CredentialManager
                     return null;
                 }
 
-                throw new Win32Exception(lastError, 
-                    string.Format("'CredEnumerate' call throw an error (Error code: {0})", lastError));
+                throw new CredentialAPIException($"Unable to Enumerate Credential store", "CredEnumerate", lastError);
             }
 
             List<NetworkCredential> networkCredentials = new List<NetworkCredential>();
@@ -344,10 +305,8 @@ namespace AdysTech.CredentialManager
 
             try
             {
-                using (var criticalSection = new CriticalCredentialHandle(pCredentials))
-                {
-                    credentials = criticalSection.EnumerateCredentials(count);
-                }
+                using var criticalSection = new CriticalCredentialHandle(pCredentials);
+                credentials = criticalSection.EnumerateCredentials(count);
             }
             catch (Exception)
             {
@@ -362,16 +321,16 @@ namespace AdysTech.CredentialManager
         /// </summary>
         /// <param name="target">Name of the application/Url where the credential is used for</param>
         /// <returns>True: Success, throw if failed</returns>
-        public static bool RemoveCredentials(string target)
+        public static bool RemoveCredentials(string target, CredentialType type = CredentialType.Generic)
         {
             // Make the API call using the P/Invoke signature
-            var isSuccess = NativeCode.CredDelete(target, NativeCode.CredentialType.Generic, 0);
+            var isSuccess = NativeCode.CredDelete(target, (UInt32)type, 0);
 
             if (isSuccess)
                 return true;
 
             int lastError = Marshal.GetLastWin32Error();
-            throw new Win32Exception(lastError, String.Format("'CredDelete' call throw an error (Error code: {0})", lastError));
+            throw new CredentialAPIException($"Unable to Delete Credential", "CredDelete", lastError);
         }
 
         /// <summary>
@@ -383,6 +342,38 @@ namespace AdysTech.CredentialManager
         {
             byte[] credentialBuffer = new UTF8Encoding().GetBytes(cred.UserName + ":" + cred.Password);
             return Convert.ToBase64String(credentialBuffer);
+        }
+
+        /// <summary>
+        /// Extract the stored credential from Windows Credential store
+        /// </summary>
+        /// <param name="target">Name of the application/Url where the credential is used for</param>
+        /// <param name="type">Credential type</param>
+        /// <returns>return the ICredential if success, null if target not found, throw if failed to read stored credentials</returns>
+        public static ICredential GetICredential(string target, CredentialType type = CredentialType.Generic)
+        {
+            IntPtr nCredPtr;
+
+            // Make the API call using the P/Invoke signature
+            bool isSuccess = NativeCode.CredRead(target, (UInt32)type, 0, out nCredPtr);
+            if (!isSuccess)
+            {
+                var lastError = Marshal.GetLastWin32Error();
+                if (lastError == (int)NativeCode.CredentialUIReturnCodes.NotFound)
+                    return null;
+                throw new CredentialAPIException($"Unable to Read Credential", "CredRead", lastError);
+            }
+
+            try
+            {
+                using var critCred = new CriticalCredentialHandle(nCredPtr);
+                Credential cred = critCred.GetCredential();
+                return cred;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
     }
 }

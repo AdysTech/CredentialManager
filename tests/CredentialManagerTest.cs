@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using AdysTech.CredentialManager;
 using System.Net;
 using System.Diagnostics;
+using System.Collections.Generic;
 
 namespace CredentialManagerTest
 {
@@ -12,7 +13,15 @@ namespace CredentialManagerTest
         private const string uName = "ZYYM3ufm3kFY9ZJZUAqYFQfzxcRc9rzdYxUwqEhBqqdrHttrh";
         private const string pwd = "5NJuqKfJBtAZYYM3ufm3kFY9ZJZUAqYFQfzxcRc9rzdYxUwqEhBqqdrHttrhcvnnDPFHEn3L";
         private const string domain = "AdysTech.com";
-
+        
+        [Serializable]
+        struct SampleAttribute
+        {
+#pragma warning disable CA2235 // Mark all non-serializable fields
+            public string role;
+            public DateTime created;
+#pragma warning restore CA2235 // Mark all non-serializable fields
+        }
 
         [TestMethod, TestCategory("AppVeyor")]
         public void TestSaveCredentials()
@@ -20,7 +29,25 @@ namespace CredentialManagerTest
             try
             {
                 var cred = new NetworkCredential(uName, pwd, domain);
-                Assert.IsTrue(CredentialManager.SaveCredentials("TestSystem", cred), "SaveCredential failed");
+                Assert.IsNotNull(CredentialManager.SaveCredentials("TestSystem", cred), "SaveCredential failed");
+            }
+            catch (Exception e)
+            {
+                Assert.Fail("Unexpected exception of type {0} caught: {1}",
+                            e.GetType(), e.Message);
+                return;
+            }
+        }
+
+        [TestMethod, TestCategory("AppVeyor")]
+        public void TestGetCredentials()
+        {
+
+            try
+            {
+                var cred = CredentialManager.GetCredentials("TestSystem");
+                Assert.IsNotNull(cred, "GetCredential failed");
+                Assert.IsTrue(uName == cred.UserName && pwd == cred.Password && domain == cred.Domain, "Saved and retreived data doesn't match");
             }
             catch (Exception e)
             {
@@ -32,14 +59,46 @@ namespace CredentialManagerTest
 
 
         [TestMethod, TestCategory("AppVeyor")]
-        public void TestGetCredentials()
+        public void TestICredential_Comment()
+        {
+            try
+            {
+                var cred = (new NetworkCredential(uName, pwd, domain)).ToICredential();
+                cred.TargetName = "TestSystem_comment";
+                cred.Comment = "This comment is only visible via API, not in Windows UI";
+                Assert.IsTrue(cred.SaveCredential(), "SaveCredential on ICredential failed");
+
+                var cred1 = CredentialManager.GetICredential(cred.TargetName);
+                Assert.IsNotNull(cred, "GetICredential failed");
+                Assert.IsTrue(cred1.UserName == cred.UserName && cred1.CredentialBlob == cred.CredentialBlob && cred1.Comment == cred.Comment, "Saved and retreived data doesn't match");
+            }
+            catch (Exception e)
+            {
+                Assert.Fail("Unexpected exception of type {0} caught: {1}",
+                            e.GetType(), e.Message);
+                return;
+            }
+        }
+
+        [TestMethod, TestCategory("AppVeyor")]
+        public void TestICredential_Attributes()
         {
 
             try
             {
-                var cred = CredentialManager.GetCredentials("TestSystem");
-                Assert.IsNotNull(cred, "GetCredential failed");
-                Assert.IsTrue(uName == cred.UserName && pwd == cred.Password && domain == cred.Domain, "Saved and retreived data doesn't match");
+                var cred = (new NetworkCredential(uName, pwd, domain)).ToICredential();
+                cred.TargetName = "TestSystem_Attributes";
+                cred.Attributes = new Dictionary<string, Object>();
+
+                var sample = new SampleAttribute() { role = "regular", created = DateTime.UtcNow };
+                cred.Attributes.Add("sampleAttribute", sample);
+
+                Assert.IsTrue(cred.SaveCredential(), "SaveCredential on ICredential failed");
+                var cred1 = CredentialManager.GetICredential(cred.TargetName);
+                Assert.IsNotNull(cred, "GetICredential failed");
+                Assert.IsTrue(cred1.UserName == cred.UserName && cred1.CredentialBlob == cred.CredentialBlob && cred1.Attributes?.Count == cred.Attributes?.Count, "Saved and retreived data doesn't match");
+                //Assert.IsTrue(cred.Attributes.All(a=>a.Value == cred1.Attributes[a.Key]), "Saved and retreived data doesn't match");
+                Assert.IsTrue(((SampleAttribute)cred1.Attributes["sampleAttribute"]).role == sample.role, "Saved and retreived data doesn't match");
             }
             catch (Exception e)
             {
@@ -139,7 +198,7 @@ namespace CredentialManagerTest
                     var pwd = cred.Password;
                     var dmn = cred.Domain;
                     Debug.WriteLine("Usr:{0}, Pwd{1}, Dmn{2}", usr, pwd, dmn);
-                    Assert.IsTrue(CredentialManager.SaveCredentials("TestSystem", cred), "SaveCredential failed");
+                    Assert.IsNotNull(CredentialManager.SaveCredentials("TestSystem", cred), "SaveCredential failed");
                     cred = CredentialManager.GetCredentials("TestSystem");
                     Assert.IsNotNull(cred, "GetCredential failed");
                     Assert.IsTrue(usr == cred.UserName && pwd == cred.Password && dmn == cred.Domain, "Saved and retreived data doesn't match");
@@ -168,7 +227,7 @@ namespace CredentialManagerTest
                     var pwd = cred.Password;
                     var dmn = cred.Domain;
                     Debug.WriteLine("Usr:{0}, Pwd{1}, Dmn{2}", usr, pwd, dmn);
-                    Assert.IsTrue(CredentialManager.SaveCredentials("TestSystem1", cred), "SaveCredential failed");
+                    Assert.IsNotNull(CredentialManager.SaveCredentials("TestSystem1", cred), "SaveCredential failed");
                     cred = CredentialManager.GetCredentials("TestSystem1");
                     Assert.IsNotNull(cred, "GetCredential failed");
                     Assert.IsTrue(usr == cred.UserName && pwd == cred.Password && dmn == cred.Domain, "Saved and retreived data doesn't match");
@@ -184,13 +243,13 @@ namespace CredentialManagerTest
         }
 
 
-        
+
         [TestMethod, TestCategory("AppVeyor")]
         public void TestSaveCredentials_Windows()
         {
             var cred = new NetworkCredential("admin", "P@$$w0rd");
-            var res = CredentialManager.SaveCredentials("TestWindowsCredential", cred, CredentialManager.CredentialType.Windows);
-            var cred1 = CredentialManager.GetCredentials("TestWindowsCredential", CredentialManager.CredentialType.Windows);
+            var res = CredentialManager.SaveCredentials("TestWindowsCredential", cred, CredentialType.Windows);
+            var cred1 = CredentialManager.GetCredentials("TestWindowsCredential", CredentialType.Windows);
             //https://msdn.microsoft.com/en-us/library/windows/desktop/aa374788(v=vs.85).aspx
             //CredentialType.Windows internally gets translated to CRED_TYPE_DOMAIN_PASSWORD
             //as per MSDN, for this type CredentialBlob can only be read by the authentication packages.
@@ -204,7 +263,7 @@ namespace CredentialManagerTest
             var cred = new NetworkCredential(string.Empty, "P@$$w0rd");
             var res = CredentialManager.SaveCredentials("TestCredWithoutUserName", cred);
             var cred1 = CredentialManager.GetCredentials("TestCredWithoutUserName");
-            Assert.IsTrue(cred1.UserName == cred.UserName && cred1.Password== cred.Password && cred1.Domain == cred.Domain, "Saved and retreived data doesn't match");
+            Assert.IsTrue(cred1.UserName == cred.UserName && cred1.Password == cred.Password && cred1.Domain == cred.Domain, "Saved and retreived data doesn't match");
         }
 
         [TestMethod, TestCategory("AppVeyor")]
