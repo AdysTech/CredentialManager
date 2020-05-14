@@ -1,14 +1,10 @@
-﻿using System;
-using System.ComponentModel;
-using System.Net;
-using System.Runtime.InteropServices;
-using System.Text;
+﻿using System.Net;
 
 namespace AdysTech.CredentialManager
 {
-    internal static class CredentialExtensions
+    public static class CredentialExtensions
     {
-        internal static ICredential ToICredential(this NetworkCredential cred)
+        public static ICredential ToICredential(this NetworkCredential cred)
         {
             if (cred == null)
             {
