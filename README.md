@@ -1,21 +1,19 @@
  [![Build status](https://ci.appveyor.com/api/projects/status/b6osdeuob7qeuivr?svg=true)](https://ci.appveyor.com/project/AdysTech/credentialmanager)
 
  
-### Nuget Packages
-#### .Net 4.5+
+### Nuget Package
 [AdysTech.CredentialManager](https://www.nuget.org/packages/AdysTech.CredentialManager/)
-#### netstandard
-[AdysTech.CredentialManager.Core](https://www.nuget.org/packages/AdysTech.CredentialManager.Core/)
+
+Supports .NET Framework 4.5+, and .NET Standard 2.1+.
 
 #### Latest Download
 [AdysTech.CredentialManager](https://ci.appveyor.com/api/buildjobs/so3ev8bmq51pp2im/artifacts/AdysTech.CredentialManager%2Fbin%2FCredentialManager.zip)
 
-
 # CredentialManager
 C# wrapper around CredWrite / CredRead functions to store and retrieve from Windows Credential Store.
-Windows OS comes equipped with a very secure robust [Credential Manager](https://technet.microsoft.com/en-us/library/jj554668.aspx) from Windows Xp onwards, and [good set of APIs](https://msdn.microsoft.com/en-us/library/windows/desktop/aa374731(v=vs.85).aspx#credentials_management_functions) to interact with it. However .Net framework did not provide any standard way to interact with this vault [until Windows 8.1](https://msdn.microsoft.com/en-us/library/windows/apps/windows.security.credentials.aspx).
+Windows OS comes equipped with a very secure robust [Credential Manager](https://technet.microsoft.com/en-us/library/jj554668.aspx) from Windows XP onwards, and [good set of APIs](https://msdn.microsoft.com/en-us/library/windows/desktop/aa374731(v=vs.85).aspx#credentials_management_functions) to interact with it. However .NET Framework did not provide any standard way to interact with this vault [until Windows 8.1](https://msdn.microsoft.com/en-us/library/windows/apps/windows.security.credentials.aspx).
 
-Microsoft Peer Channel blog (WCF team) has written [a blog post](http://blogs.msdn.com/b/peerchan/archive/2005/11/01/487834.aspx) in 2005 which provided basic structure of using the WIn32 APIs for credential management in .Net.
+Microsoft Peer Channel blog (WCF team) has written [a blog post](http://blogs.msdn.com/b/peerchan/archive/2005/11/01/487834.aspx) in 2005 which provided basic structure of using the Win32 APIs for credential management in .NET.
 I used their code, and improved up on it to add `PromptForCredentials` function to display a dialog to get the credentials from user.
 
 Need: Many web services and REST Urls use basic authentication. .Net does not have a way to generate basic auth text (username:password encoded in Base64) for the current logged in user, with their credentials.
