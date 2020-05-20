@@ -274,7 +274,7 @@ namespace AdysTech.CredentialManager
         /// <returns>return the credentials if success, null if target not found, throw if failed to read stored credentials</returns>
         public static NetworkCredential GetCredentials(string target, CredentialType type = CredentialType.Generic)
         {
-            return (GetICredential(target, type) as Credential).ToNetworkCredential();
+            return (GetICredential(target, type) as Credential)?.ToNetworkCredential();
         }
 
         /// <summary>
