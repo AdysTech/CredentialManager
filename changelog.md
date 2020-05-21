@@ -2,7 +2,7 @@
 
 ### Release Notes
 
-This version merges the .Net framework and core projects into one multi target project. 
+This version merges the .NET Framework and .NET Core projects into one multi-target project. 
 
 ### Bugfixes
 
@@ -13,7 +13,7 @@ This version merges the .Net framework and core projects into one multi target p
 - [#41](https://github.com/AdysTech/CredentialManager/pull/41): Use single project to target .NET Framework & Core. SDK-style projects allow multi-targeting which makes this much simpler. Thanks to @drewnoakes 
 
 ### Breaking Change
-- since [main Nuget Package](https://www.nuget.org/packages/AdysTech.CredentialManager) supports .netcore core specific Nuget package will be deprecated.
+- since [main Nuget Package](https://www.nuget.org/packages/AdysTech.CredentialManager) supports .NET Core specific Nuget package will be deprecated.
 
 
 ## v2.0.0 [Apr 20, 2020]
