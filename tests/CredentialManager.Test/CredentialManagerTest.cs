@@ -267,6 +267,13 @@ namespace CredentialManagerTest
         }
 
         [TestMethod, TestCategory("AppVeyor")]
+        public void TestGetCredentials_NonExistantCredential()
+        {
+            var cred = CredentialManager.GetCredentials("TotallyNonExistingTarget");
+            Assert.IsNull(cred);
+        }
+
+        [TestMethod, TestCategory("AppVeyor")]
         public void Test_ParseUserName_supports_long_name()
         {
             var longUserName = "ksdqkdbkbqskdbqskdqsdsqdqsdjsqdjqsdjlqsjd@domain.com";

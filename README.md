@@ -57,3 +57,5 @@ Comments and attributes  are only accessible programmatically. Windows always su
     cred.Comment = "Update the credential data and save back";
     cred.SaveCredential();
 ``` 
+#### deprecated
+[AdysTech.CredentialManager.Core](https://www.nuget.org/packages/AdysTech.CredentialManager.Core/)
