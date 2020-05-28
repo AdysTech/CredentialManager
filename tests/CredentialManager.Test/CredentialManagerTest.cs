@@ -125,6 +125,23 @@ namespace CredentialManagerTest
             }
         }
 
+        [TestMethod, TestCategory("AppVeyor")]
+        public void TestEnumerateICredentials()
+        {
+            try
+            {
+                var creds = CredentialManager.EnumerateICredentials();
+                Assert.IsNotNull(creds, "EnumerateICredentials failed");
+                Assert.IsTrue(creds?.Count > 0, "No credentials stored in the system");
+            }
+            catch (Exception e)
+            {
+                Assert.Fail("Unexpected exception of type {0} caught: {1}",
+                            e.GetType(), e.Message);
+                return;
+            }
+        }
+
         /// <summary>
         /// This test assumes you have a Generic Credential for https://github.com stored on your system.
         /// </summary>

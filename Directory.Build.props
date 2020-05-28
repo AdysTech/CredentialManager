@@ -1,0 +1,16 @@
+<Project>
+ <PropertyGroup>
+   <Deterministic>true</Deterministic>
+   <TargetFrameworks>net45;netcoreapp2.2</TargetFrameworks>
+   <LangVersion>8</LangVersion>
+   <PackageProjectUrl>https://github.com/AdysTech/CredentialManager</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/AdysTech/CredentialManager</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Copyright>© AdysTech 2016-2020</Copyright>
+    <Authors>AdysTech</Authors>
+    <SignAssembly>true</SignAssembly>
+    <DelaySign>false</DelaySign> 
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>../../key.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+</Project>

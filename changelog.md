@@ -1,3 +1,17 @@
+## v2.2.0 [May 27, 2020]
+
+### Release Notes
+
+This version adds EnumerateICredentials. Housekeeping to move common project properties to build.props.
+
+### Bugfixes
+
+- [#47](https://github.com/AdysTech/CredentialManager/issues/47): Getting Multiple targets
+
+### Features
+
+- [#46](https://github.com/AdysTech/CredentialManager/pull/46): Add EnumerateICredentials . Thanks to @strzalkowski 
+
 ## v2.1.0 [May 20, 2020]
 
 ### Release Notes
