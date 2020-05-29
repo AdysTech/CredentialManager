@@ -26,4 +26,4 @@ deploy:
 artifacts:
 - path: src\AdysTech.CredentialManager\bin\Debug
   name: CredentialManager
-- path: src\AdysTech.CredentialManager\bin\**\*.nupkg
+- path: src\AdysTech.CredentialManager\bin\**\*nupkg
