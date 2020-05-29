@@ -10,7 +10,7 @@ before_build:
 - dotnet restore
 build:
   verbosity: minimal
-  publish_nuget: true
+  # publish_nuget: true
   publish_nuget_symbols: true
   use_snupkg_format: true
 test:
@@ -26,3 +26,4 @@ deploy:
 artifacts:
 - path: src\AdysTech.CredentialManager\bin\Debug
   name: CredentialManager
+- path: src\AdysTech.CredentialManager\bin\**\*.nupkg
