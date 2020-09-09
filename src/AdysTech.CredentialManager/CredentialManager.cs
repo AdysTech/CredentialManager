@@ -163,48 +163,7 @@ namespace AdysTech.CredentialManager
         /// <param name="target">A descriptive text for where teh credentials being asked are used for</param>
         /// <param name="save">Whether or not to offer the checkbox to save the credentials</param>
         /// <returns>NetworkCredential object containing the user name, </returns>
-        public static NetworkCredential PromptForCredentials(string target, ref bool save)
-        {
-            string username = "", password, domain;
-            return PromptForCredentials(target, ref save, ref username, out password, out domain) ? new NetworkCredential(username, password, domain) : null;
-        }
-
-        /// <summary>
-        /// Opens OS Version specific Window prompting for credentials
-        /// </summary>
-        /// <param name="target">A descriptive text for where teh credentials being asked are used for</param>
-        /// <param name="save">Whether or not to offer the checkbox to save the credentials</param>
-        /// <param name="message">A brief message to display in the dialog box</param>
-        /// <param name="caption">Title for the dialog box</param>
-        /// <returns>NetworkCredential object containing the user name, </returns>
-        public static NetworkCredential PromptForCredentials(string target, ref bool save, string message, string caption)
-        {
-            string username = "", password, domain;
-            return PromptForCredentials(target, ref save, message, caption, ref username, out password, out domain) ? new NetworkCredential(username, password, domain) : null;
-        }
-
-        /// <summary>
-        /// Opens OS Version specific Window prompting for credentials
-        /// </summary>
-        /// <param name="target">A descriptive text for where teh credentials being asked are used for</param>
-        /// <param name="save">Whether or not to offer the checkbox to save the credentials</param>
-        /// <param name="message">A brief message to display in the dialog box</param>
-        /// <param name="caption">Title for the dialog box</param>
-        /// <param name="defaultUserName">Default value for username</param>
-        /// <returns>NetworkCredential object containing the user name, </returns>
-        public static NetworkCredential PromptForCredentials(string target, ref bool save, string message, string caption, string defaultUserName)
-        {
-            string username = defaultUserName, password, domain;
-            return PromptForCredentials(target, ref save, message, caption, ref username, out password, out domain) ? new NetworkCredential(username, password, domain) : null;
-        }
-
-        /// <summary>
-        /// Opens OS Version specific Window prompting for credentials
-        /// </summary>
-        /// <param name="target">A descriptive text for where teh credentials being asked are used for</param>
-        /// <param name="save">Whether or not to offer the checkbox to save the credentials</param>
-        /// <returns>NetworkCredential object containing the user name, </returns>
-        public static NetworkCredential PromptForCredentials(string target, ref bool save, IntPtr parentWindowHandle)
+        public static NetworkCredential PromptForCredentials(string target, ref bool save, IntPtr parentWindowHandle = default)
         {
             string username = "", password, domain;
             return PromptForCredentials(target, ref save, ref username, out password, out domain, parentWindowHandle) ? new NetworkCredential(username, password, domain) : null;
@@ -218,7 +177,7 @@ namespace AdysTech.CredentialManager
         /// <param name="message">A brief message to display in the dialog box</param>
         /// <param name="caption">Title for the dialog box</param>
         /// <returns>NetworkCredential object containing the user name, </returns>
-        public static NetworkCredential PromptForCredentials(string target, ref bool save, string message, string caption, IntPtr parentWindowHandle)
+        public static NetworkCredential PromptForCredentials(string target, ref bool save, string message, string caption, IntPtr parentWindowHandle = default)
         {
             string username = "", password, domain;
             return PromptForCredentials(target, ref save, message, caption, ref username, out password, out domain, parentWindowHandle) ? new NetworkCredential(username, password, domain) : null;
@@ -233,7 +192,7 @@ namespace AdysTech.CredentialManager
         /// <param name="caption">Title for the dialog box</param>
         /// <param name="defaultUserName">Default value for username</param>
         /// <returns>NetworkCredential object containing the user name, </returns>
-        public static NetworkCredential PromptForCredentials(string target, ref bool save, string message, string caption, string defaultUserName, IntPtr parentWindowHandle)
+        public static NetworkCredential PromptForCredentials(string target, ref bool save, string message, string caption, string defaultUserName, IntPtr parentWindowHandle = default)
         {
             string username = defaultUserName, password, domain;
             return PromptForCredentials(target, ref save, message, caption, ref username, out password, out domain, parentWindowHandle) ? new NetworkCredential(username, password, domain) : null;
