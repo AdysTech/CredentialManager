@@ -110,7 +110,11 @@ namespace AdysTech.CredentialManager
             Persistance = credential.Persistance;
         }
 
-
+        public Credential(string target, CredentialType type)
+        {
+            Type = type;
+            TargetName = target;
+        }
 
         public NetworkCredential ToNetworkCredential()
         {
@@ -150,9 +154,9 @@ namespace AdysTech.CredentialManager
                 throw new ArgumentException("Comment can't be more than 256 bytes long", "Comment");
 
             if (String.IsNullOrEmpty(this.TargetName))
-                throw new ArgumentNullException("TargetName","TargetName can't be Null or Empty");
-            else if(this.TargetName.Length>32767)
-                throw new ArgumentNullException("TargetName can't be more than 32kB","TargetName");
+                throw new ArgumentNullException("TargetName", "TargetName can't be Null or Empty");
+            else if (this.TargetName.Length > 32767)
+                throw new ArgumentNullException("TargetName can't be more than 32kB", "TargetName");
 
             if (String.IsNullOrEmpty(this.CredentialBlob))
                 throw new ArgumentNullException("CredentialBlob", "CredentialBlob can't be Null or Empty");
@@ -262,6 +266,18 @@ namespace AdysTech.CredentialManager
                         Marshal.FreeHGlobal(buffer);
                 }
             }
+        }
+
+        public bool RemoveCredential()
+        {
+            // Make the API call using the P/Invoke signature
+            var isSuccess = NativeCode.CredDelete(TargetName, (uint)Type, 0);
+
+            if (isSuccess)
+                return true;
+
+            int lastError = Marshal.GetLastWin32Error();
+            throw new CredentialAPIException($"Unable to Delete Credential", "CredDelete", lastError);
         }
     }
 

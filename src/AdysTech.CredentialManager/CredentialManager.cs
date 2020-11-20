@@ -333,14 +333,11 @@ namespace AdysTech.CredentialManager
         /// <returns>True: Success, throw if failed</returns>
         public static bool RemoveCredentials(string target, CredentialType type = CredentialType.Generic)
         {
-            // Make the API call using the P/Invoke signature
-            var isSuccess = NativeCode.CredDelete(target, (UInt32)type, 0);
-
-            if (isSuccess)
-                return true;
-
-            int lastError = Marshal.GetLastWin32Error();
-            throw new CredentialAPIException($"Unable to Delete Credential", "CredDelete", lastError);
+            var cred = new Credential(
+                target,
+                type
+            );
+            return cred.RemoveCredential();
         }
 
         /// <summary>
