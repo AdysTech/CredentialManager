@@ -79,6 +79,7 @@ namespace AdysTech.CredentialManager
             }
             TargetAlias = ncred.TargetAlias;
             UserName = ncred.UserName;
+            Type = (CredentialType)ncred.Type;
         }
 
         public Credential(System.Net.NetworkCredential credential)

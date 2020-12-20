@@ -409,20 +409,31 @@ namespace CredentialManagerTest
 #endif
 
         [TestMethod, TestCategory("AppVeyor")]
-        public void TestSaveCredentials_Generic()
+        public void TestDeleteCredentials_Windows()
         {
             var cred = new NetworkCredential("admin", "P@$$w0rd");
-            var saved = CredentialManager.SaveCredentials("TestGenericCredential", cred, CredentialType.Generic);
+            var saved = CredentialManager.SaveCredentials("TestDeletingWindowsCredential", cred, CredentialType.Windows);
             Assert.IsNotNull(saved, "SaveCredential on ICredential failed");
 
-            var cred1 = CredentialManager.GetICredential(saved.TargetName);
+            var cred1 = CredentialManager.GetICredential(saved.TargetName, CredentialType.Windows);
             Assert.IsNotNull(cred1, "GetICredential failed");
             Assert.IsTrue(cred1.UserName == saved.UserName, "Saved and retreived data doesn't match");
             Assert.IsTrue(CredentialManager.RemoveCredentials(saved.TargetName, saved.Type), "RemoveCredentials returned false");
 
             cred1 = CredentialManager.GetICredential(saved.TargetName);
-            Assert.IsNull(cred1, "Deleted credential was red");
+            Assert.IsNull(cred1, "Deleted credential was read");
         }
 
+        [TestMethod, TestCategory("AppVeyor")]
+        public void TestDeleteCredentials_Enumerated()
+        {
+            var credentials = CredentialManager.EnumerateICredentials();
+
+            if (credentials != null)
+            {
+
+                credentials.ForEach(x => { if (x.Type == CredentialType.Windows) x.RemoveCredential(); });
+            }
+        }
     }
 }
