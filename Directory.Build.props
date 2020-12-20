@@ -1,7 +1,7 @@
 <Project>
  <PropertyGroup>
    <Deterministic>true</Deterministic>
-   <TargetFrameworks>net45;netcoreapp2.2</TargetFrameworks>
+   <TargetFrameworks>net45;netstandard2.0</TargetFrameworks>
    <LangVersion>8</LangVersion>
    <PackageProjectUrl>https://github.com/AdysTech/CredentialManager</PackageProjectUrl>
     <RepositoryUrl>https://github.com/AdysTech/CredentialManager</RepositoryUrl>

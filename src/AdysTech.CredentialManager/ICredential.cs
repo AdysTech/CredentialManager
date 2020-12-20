@@ -21,5 +21,7 @@ namespace AdysTech.CredentialManager
 
         NetworkCredential ToNetworkCredential();
         bool SaveCredential();
+
+        bool RemoveCredential();
     }
 }
