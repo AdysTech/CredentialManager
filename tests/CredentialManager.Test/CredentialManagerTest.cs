@@ -432,7 +432,7 @@ namespace CredentialManagerTest
             if (credentials != null)
             {
 
-                credentials.ForEach(x => { if (x.Type == CredentialType.Windows) x.RemoveCredential(); });
+                credentials.ForEach(x => { if (x.Type == CredentialType.Windows) Assert.IsTrue(x.RemoveCredential(),"RemoveCredentials returned false"); });
             }
         }
     }
