@@ -47,7 +47,7 @@ namespace CredentialManagerTest
             {
                 var cred = CredentialManager.GetCredentials("TestSystem");
                 Assert.IsNotNull(cred, "GetCredential failed");
-                Assert.IsTrue(uName == cred.UserName && pwd == cred.Password && domain == cred.Domain, "Saved and retreived data doesn't match");
+                Assert.IsTrue(uName == cred.UserName && pwd == cred.Password && domain == cred.Domain, "Saved and retrieved data doesn't match");
             }
             catch (Exception e)
             {
@@ -70,7 +70,7 @@ namespace CredentialManagerTest
 
                 var cred1 = CredentialManager.GetICredential(cred.TargetName);
                 Assert.IsNotNull(cred, "GetICredential failed");
-                Assert.IsTrue(cred1.UserName == cred.UserName && cred1.CredentialBlob == cred.CredentialBlob && cred1.Comment == cred.Comment, "Saved and retreived data doesn't match");
+                Assert.IsTrue(cred1.UserName == cred.UserName && cred1.CredentialBlob == cred.CredentialBlob && cred1.Comment == cred.Comment, "Saved and retrieved data doesn't match");
             }
             catch (Exception e)
             {
@@ -96,9 +96,9 @@ namespace CredentialManagerTest
                 Assert.IsTrue(cred.SaveCredential(), "SaveCredential on ICredential failed");
                 var cred1 = CredentialManager.GetICredential(cred.TargetName);
                 Assert.IsNotNull(cred, "GetICredential failed");
-                Assert.IsTrue(cred1.UserName == cred.UserName && cred1.CredentialBlob == cred.CredentialBlob && cred1.Attributes?.Count == cred.Attributes?.Count, "Saved and retreived data doesn't match");
-                //Assert.IsTrue(cred.Attributes.All(a=>a.Value == cred1.Attributes[a.Key]), "Saved and retreived data doesn't match");
-                Assert.IsTrue(((SampleAttribute)cred1.Attributes["sampleAttribute"]).role == sample.role, "Saved and retreived data doesn't match");
+                Assert.IsTrue(cred1.UserName == cred.UserName && cred1.CredentialBlob == cred.CredentialBlob && cred1.Attributes?.Count == cred.Attributes?.Count, "Saved and retrieved data doesn't match");
+                //Assert.IsTrue(cred.Attributes.All(a=>a.Value == cred1.Attributes[a.Key]), "Saved and retrieved data doesn't match");
+                Assert.IsTrue(((SampleAttribute)cred1.Attributes["sampleAttribute"]).role == sample.role, "Saved and retrieved data doesn't match");
             }
             catch (Exception e)
             {
@@ -218,7 +218,7 @@ namespace CredentialManagerTest
                     Assert.IsNotNull(CredentialManager.SaveCredentials("TestSystem", cred), "SaveCredential failed");
                     cred = CredentialManager.GetCredentials("TestSystem");
                     Assert.IsNotNull(cred, "GetCredential failed");
-                    Assert.IsTrue(usr == cred.UserName && pwd == cred.Password && dmn == cred.Domain, "Saved and retreived data doesn't match");
+                    Assert.IsTrue(usr == cred.UserName && pwd == cred.Password && dmn == cred.Domain, "Saved and retrieved data doesn't match");
                 }
 
             }
@@ -247,7 +247,7 @@ namespace CredentialManagerTest
                     Assert.IsNotNull(CredentialManager.SaveCredentials("TestSystem1", cred), "SaveCredential failed");
                     cred = CredentialManager.GetCredentials("TestSystem1");
                     Assert.IsNotNull(cred, "GetCredential failed");
-                    Assert.IsTrue(usr == cred.UserName && pwd == cred.Password && dmn == cred.Domain, "Saved and retreived data doesn't match");
+                    Assert.IsTrue(usr == cred.UserName && pwd == cred.Password && dmn == cred.Domain, "Saved and retrieved data doesn't match");
                 }
 
             }
@@ -271,7 +271,7 @@ namespace CredentialManagerTest
             //CredentialType.Windows internally gets translated to CRED_TYPE_DOMAIN_PASSWORD
             //as per MSDN, for this type CredentialBlob can only be read by the authentication packages.
             //I am not able to get the password even while running in elevated mode. more to come.
-            Assert.IsTrue(cred1 != null && cred1.UserName == cred.UserName, "Saved and retreived data doesn't match");
+            Assert.IsTrue(cred1 != null && cred1.UserName == cred.UserName, "Saved and retrieved data doesn't match");
         }
 
         [TestMethod, TestCategory("AppVeyor")]
@@ -280,7 +280,7 @@ namespace CredentialManagerTest
             var cred = new NetworkCredential(string.Empty, "P@$$w0rd");
             var res = CredentialManager.SaveCredentials("TestCredWithoutUserName", cred);
             var cred1 = CredentialManager.GetCredentials("TestCredWithoutUserName");
-            Assert.IsTrue(cred1.UserName == cred.UserName && cred1.Password == cred.Password && cred1.Domain == cred.Domain, "Saved and retreived data doesn't match");
+            Assert.IsTrue(cred1.UserName == cred.UserName && cred1.Password == cred.Password && cred1.Domain == cred.Domain, "Saved and retrieved data doesn't match");
         }
 
         [TestMethod, TestCategory("AppVeyor")]
@@ -417,7 +417,7 @@ namespace CredentialManagerTest
 
             var cred1 = CredentialManager.GetICredential(saved.TargetName, CredentialType.Windows);
             Assert.IsNotNull(cred1, "GetICredential failed");
-            Assert.IsTrue(cred1.UserName == saved.UserName, "Saved and retreived data doesn't match");
+            Assert.IsTrue(cred1.UserName == saved.UserName, "Saved and retrieved data doesn't match");
             Assert.IsTrue(CredentialManager.RemoveCredentials(saved.TargetName, saved.Type), "RemoveCredentials returned false");
 
             cred1 = CredentialManager.GetICredential(saved.TargetName);
@@ -435,5 +435,14 @@ namespace CredentialManagerTest
                 credentials.ForEach(x => { if (x.Type == CredentialType.Windows) Assert.IsTrue(x.RemoveCredential(),"RemoveCredentials returned false"); });
             }
         }
-    }
+
+        [TestMethod, TestCategory("AppVeyor")]
+        public void TestGetCredentials_PasswordLengthOne()
+        {
+	        var cred = new NetworkCredential("admin", "P");
+	        var res = CredentialManager.SaveCredentials("TestCredWithPasswordSingleCharacter", cred);
+	        var cred1 = CredentialManager.GetCredentials("TestCredWithPasswordSingleCharacter");
+	        Assert.IsTrue(cred1.Password == cred.Password, "Saved and retrieved password doesn't match");
+        }
+   }
 }
