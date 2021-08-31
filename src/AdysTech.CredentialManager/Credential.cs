@@ -42,7 +42,7 @@ namespace AdysTech.CredentialManager
 
 
             var CredentialBlobSize = ncred.CredentialBlobSize;
-            if (ncred.CredentialBlobSize > 2)
+            if (ncred.CredentialBlobSize >= 2)
             {
                 CredentialBlob = Marshal.PtrToStringUni(ncred.CredentialBlob, (int)ncred.CredentialBlobSize / 2);
             }
