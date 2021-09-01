@@ -20,7 +20,7 @@ test:
 deploy:
 - provider: NuGet
   api_key:
-    secure: x3I/stoKSfZBfSgc91uX34lkSU+Qs7XfgVJVSSKZsgeqKpz3WLIye9Ys6Gv7jpoo
+    secure: z+VCuAl52RiKf1Ie2p6ivQloYTH12q7H0G6fEl/c4FepMD75/vI7oRnbMISdgWEm
   on:
     branch: master
 artifacts:
