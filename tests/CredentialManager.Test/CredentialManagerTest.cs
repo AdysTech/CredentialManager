@@ -347,13 +347,14 @@ namespace CredentialManagerTest
         [TestMethod, TestCategory("AppVeyor")]
         public void TestICredential_LongPassword()
         {
-
             try
             {
+                int tooLong = 2 * Credential.MaxCredentialBlobSize;
                 string test = "test";
-                var cred = (new NetworkCredential(test, new String('*', 512), test)).ToICredential();
+                var cred = (new NetworkCredential(test, new String('*', tooLong), test)).ToICredential();
                 cred.TargetName = "TestSystem_Attributes";
-                Assert.ThrowsException<ArgumentException>(() => cred.SaveCredential(), "SaveCredential didn't throw ArgumentException for larger than 512 byte password");
+                Assert.ThrowsException<ArgumentException>(() => cred.SaveCredential(), 
+                    $"SaveCredential didn't throw ArgumentException for exceeding {Credential.MaxCredentialBlobSize} bytes.");
             }
             catch (Exception e)
             {
@@ -362,6 +363,24 @@ namespace CredentialManagerTest
                 return;
             }
         }
+
+        [TestMethod, TestCategory("AppVeyor")]
+        public void TestICredential_LongTokenShouldWork()
+        {
+            // Tokens can be rather large. 1040: a size that can be stored.
+            const int tokenLength = 1040;
+            Assert.IsTrue(tokenLength < Credential.MaxCredentialBlobSize, "This test is supposed to verify a valid length.");
+
+            string test = "longPasswordTest";
+            var net = new NetworkCredential(test, new String('1', tokenLength), test);
+            ICredential cred = net.ToICredential();
+            cred.TargetName = "TestSystem_LongPassword";
+            Assert.IsNotNull(cred.SaveCredential(), "SaveCredential should handle passwords of token size");
+
+            var cred1 = CredentialManager.GetCredentials("TestSystem_LongPassword");
+            Assert.IsTrue(cred1.Password == net.Password, "Saved and retrieved password doesn't match");
+        }
+
         [TestMethod, TestCategory("AppVeyor")]
         public void TestICredential_AttributesNullValue()
         {

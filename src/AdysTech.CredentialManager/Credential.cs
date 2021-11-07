@@ -25,6 +25,24 @@ namespace AdysTech.CredentialManager
         public UInt32 Flags;
         public string TargetAlias;
 
+        /// <summary>
+        /// Maximum size in bytes of a credential that can be stored. While the API 
+        /// documentation lists 512 as the max size, the current Windows SDK sets  
+        /// it to 5*512 via CRED_MAX_CREDENTIAL_BLOB_SIZE in wincred.h. This has 
+        /// been verified to work on Windows Server 2016 and later. 
+        /// <para>
+        /// API Doc: https://docs.microsoft.com/en-us/windows/win32/api/wincred/ns-wincred-credentiala
+        /// </para>
+        /// </summary>
+        /// <remarks>
+        /// This only controls the guard in the library. The actual underlying OS
+        /// controls the actual limit. Operations Systems older than Windows Server
+        /// 2016 may only support 512 bytes.
+        /// <para>
+        /// Tokens often are 1040 bytes or more.
+        /// </para>
+        /// </remarks>
+        internal const int MaxCredentialBlobSize = 2560;
 
         internal Credential(NativeCode.NativeCredential ncred)
         {
@@ -172,8 +190,8 @@ namespace AdysTech.CredentialManager
                 TargetName = this.TargetName,
                 CredentialBlobSize = (UInt32)Encoding.Unicode.GetBytes(this.CredentialBlob).Length
             };
-            if (ncred.CredentialBlobSize > 512)
-                throw new ArgumentException($"Credential can't be more than 512 bytes long", "CredentialBlob");
+            if (ncred.CredentialBlobSize > MaxCredentialBlobSize)
+                throw new ArgumentException($"Credential can't be more than {MaxCredentialBlobSize} bytes long", "CredentialBlob");
 
             ncred.CredentialBlob = Marshal.StringToCoTaskMemUni(this.CredentialBlob);
             if (this.LastWritten != DateTime.MinValue)
