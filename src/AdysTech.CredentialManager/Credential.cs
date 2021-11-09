@@ -36,7 +36,7 @@ namespace AdysTech.CredentialManager
         /// </summary>
         /// <remarks>
         /// This only controls the guard in the library. The actual underlying OS
-        /// controls the actual limit. Operations Systems older than Windows Server
+        /// controls the actual limit. Operating Systems older than Windows Server
         /// 2016 may only support 512 bytes.
         /// <para>
         /// Tokens often are 1040 bytes or more.
