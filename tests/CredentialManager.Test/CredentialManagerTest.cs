@@ -463,5 +463,21 @@ namespace CredentialManagerTest
 	        var cred1 = CredentialManager.GetCredentials("TestCredWithPasswordSingleCharacter");
 	        Assert.IsTrue(cred1.Password == cred.Password, "Saved and retrieved password doesn't match");
         }
-   }
+        [TestMethod, TestCategory("AppVeyor")]
+        
+        public void TestSaveCredentials_EmptyPassword()
+        {
+            try
+            {
+                var cred = new NetworkCredential(uName, "", domain);
+                Assert.IsNotNull(CredentialManager.SaveCredentials("TestSystem_nullPwd", cred,AllowNullPassword:true), "SaveCredential failed");
+            }
+            catch (Exception e)
+            {
+                Assert.Fail("Unexpected exception of type {0} caught: {1}",
+                            e.GetType(), e.Message);
+                return;
+            }
+        }
+    }
 }

@@ -1,3 +1,29 @@
+## v2.6.0 [Jan 18, 2022]
+
+### Release Notes
+
+This version allows to save blank passwords with an additional `AllowBlankPassowrd` paremeter. Fixes #67.
+
+## v2.5.0 [Nov 10, 2021]
+
+### Release Notes
+
+Update max credential length to 2560 charecters. Fixes #65, Thanks to @ldattilo
+
+## v2.4.0 [Aug 30, 2021]
+
+### Release Notes
+
+Fixes #62 allowing to save single charecter passowrds, thanks to @aschoelzhorn
+ 
+
+
+## v2.3.0 [Dec 20, 2020]
+
+### Release Notes
+
+This version adds RemoveCredential. Fixes #59
+
 ## v2.2.0 [May 27, 2020]
 
 ### Release Notes

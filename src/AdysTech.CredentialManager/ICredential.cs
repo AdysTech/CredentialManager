@@ -20,7 +20,7 @@ namespace AdysTech.CredentialManager
         string UserName { get; set; }
 
         NetworkCredential ToNetworkCredential();
-        bool SaveCredential();
+        bool SaveCredential(bool AllowBlankPassword=false);
 
         bool RemoveCredential();
     }
