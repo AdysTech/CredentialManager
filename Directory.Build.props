@@ -6,7 +6,7 @@
    <PackageProjectUrl>https://github.com/AdysTech/CredentialManager</PackageProjectUrl>
     <RepositoryUrl>https://github.com/AdysTech/CredentialManager</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Copyright>© AdysTech 2016-2020</Copyright>
+    <Copyright>© AdysTech 2016-2022</Copyright>
     <Authors>AdysTech</Authors>
     <SignAssembly>true</SignAssembly>
     <DelaySign>false</DelaySign> 

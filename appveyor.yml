@@ -8,6 +8,8 @@ branches:
 before_build:
 - nuget restore
 - dotnet restore
+configuration:
+  - Release
 build:
   verbosity: minimal
   # publish_nuget: true

@@ -164,7 +164,7 @@ namespace AdysTech.CredentialManager
             }
         }
 
-        public bool SaveCredential()
+        public bool SaveCredential(bool AllowBlankPassword=false)
         {
             IntPtr buffer = default(IntPtr);
             GCHandle pinned = default(GCHandle);
@@ -177,7 +177,7 @@ namespace AdysTech.CredentialManager
             else if (this.TargetName.Length > 32767)
                 throw new ArgumentNullException("TargetName can't be more than 32kB", "TargetName");
 
-            if (String.IsNullOrEmpty(this.CredentialBlob))
+            if (!AllowBlankPassword && String.IsNullOrEmpty(this.CredentialBlob))
                 throw new ArgumentNullException("CredentialBlob", "CredentialBlob can't be Null or Empty");
 
             NativeCode.NativeCredential ncred = new NativeCode.NativeCredential
