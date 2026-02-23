@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="CommentTooLong" xml:space="preserve">
+    <value>El comentario no puede superar los 256 bytes</value>
+  </data>
+  <data name="TargetNameNullOrEmpty" xml:space="preserve">
+    <value>TargetName no puede ser nulo o vacío</value>
+  </data>
+  <data name="TargetNameTooLong" xml:space="preserve">
+    <value>TargetName no puede superar los 32 kB</value>
+  </data>
+  <data name="CredentialBlobNullOrEmpty" xml:space="preserve">
+    <value>CredentialBlob no puede ser nulo o vacío</value>
+  </data>
+  <data name="CredentialBlobTooLong" xml:space="preserve">
+    <value>Las credenciales no pueden superar los {0} bytes</value>
+  </data>
+  <data name="TooManyAttributes" xml:space="preserve">
+    <value>Las credenciales no pueden tener más de 64 atributos</value>
+  </data>
+  <data name="AttributeNameTooLong" xml:space="preserve">
+    <value>Los nombres de atributo no pueden superar los 256 bytes. Error con la clave: {0}</value>
+  </data>
+  <data name="AttributeValueNull" xml:space="preserve">
+    <value>El valor del atributo no puede ser nulo. Error con la clave: {0}</value>
+  </data>
+  <data name="AttributeValueTooLong" xml:space="preserve">
+    <value>Los valores de atributo no pueden superar los 256 bytes después de la serialización. Error con el valor para la clave: {0}</value>
+  </data>
+  <data name="UnableToSaveCredential" xml:space="preserve">
+    <value>No se pudieron guardar las credenciales</value>
+  </data>
+  <data name="UnableToParseUserName" xml:space="preserve">
+    <value>No se pudo analizar el nombre de usuario</value>
+  </data>
+  <data name="UnableToDeleteCredential" xml:space="preserve">
+    <value>No se pudieron eliminar las credenciales</value>
+  </data>
+  <data name="UnableToEnumerateCredentials" xml:space="preserve">
+    <value>No se pudo enumerar el almacén de credenciales</value>
+  </data>
+  <data name="UnableToReadCredential" xml:space="preserve">
+    <value>No se pudieron leer las credenciales</value>
+  </data>
+  <data name="InvalidCriticalHandle" xml:space="preserve">
+    <value>&#x00A1;CriticalHandle no válido!</value>
+  </data>
+</root>

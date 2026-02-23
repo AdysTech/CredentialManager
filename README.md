@@ -1,61 +1,165 @@
- [![Build status](https://ci.appveyor.com/api/projects/status/b6osdeuob7qeuivr?svg=true)](https://ci.appveyor.com/project/AdysTech/credentialmanager)
-
- 
-### Nuget Package
-[AdysTech.CredentialManager](https://www.nuget.org/packages/AdysTech.CredentialManager/)
-
-Supports .NET Framework 4.5+, and .NET Standard 2.1+.
-
-#### Latest Download
-[AdysTech.CredentialManager](https://ci.appveyor.com/api/buildjobs/so3ev8bmq51pp2im/artifacts/AdysTech.CredentialManager%2Fbin%2FCredentialManager.zip)
-
 # CredentialManager
-C# wrapper around CredWrite / CredRead functions to store and retrieve from Windows Credential Store.
-Windows OS comes equipped with a very secure robust [Credential Manager](https://technet.microsoft.com/en-us/library/jj554668.aspx) from Windows XP onwards, and [good set of APIs](https://msdn.microsoft.com/en-us/library/windows/desktop/aa374731(v=vs.85).aspx#credentials_management_functions) to interact with it. However .NET Framework did not provide any standard way to interact with this vault [until Windows 8.1](https://msdn.microsoft.com/en-us/library/windows/apps/windows.security.credentials.aspx).
 
-Microsoft Peer Channel blog (WCF team) has written [a blog post](http://blogs.msdn.com/b/peerchan/archive/2005/11/01/487834.aspx) in 2005 which provided basic structure of using the Win32 APIs for credential management in .NET.
-I used their code, and improved up on it to add `PromptForCredentials` function to display a dialog to get the credentials from user.
+C# wrapper around Windows Credential Manager APIs (`CredWrite` / `CredRead` / `CredEnumerate`)
+to store and retrieve credentials from the Windows Credential Store.
 
-Need: Many web services and REST Urls use basic authentication. .Net does not have a way to generate basic auth text (username:password encoded in Base64) for the current logged in user, with their credentials.
-`ICredential.GetCredential (uri, "Basic")` does not provide a way to get current user security context either as it will expose the current password in plain text. So only way to retrieve Basic auth text is to prompt the user for the credentials and storing it, or assume some stored credentials in Windows store, and retrieving it.
+Forked from [AdysTech/CredentialManager](https://github.com/AdysTech/CredentialManager) with
+security hardening, modernized targets, and code quality improvements. See [CHANGELOG.md](CHANGELOG.md)
+for the full audit findings and changes.
 
-This project provides access to all three
-#### 1. Prompt user for Credentials
-```C#
-var cred = CredentialManager.PromptForCredentials ("Some Webservice", ref save, "Please provide credentials", "Credentials for service");
-```            
+## Target Frameworks
 
-#### 2. Save Credentials
-```C#
-var cred = new NetworkCredential ("TestUser", "Pwd");
-CredentialManager.SaveCredentials ("TestSystem", cred);
-```            
+- **.NET 8.0** (primary)
+- **.NET Standard 2.0** (broad compatibility)
 
-#### 3. Retrieve saved Credentials
-```C#
-var cred = CredentialManager.GetCredentials ("TestSystem");
-```            
+## Features
 
-With v2.0 release exposes raw credential, with additional information not available in normal `NetworkCredential` available in previous versions. This library also allows to store comments and additional attributes associated with a Credential object. The attributes are serialized using `BinaryFormatter` and API has 256 byte length. `BinaryFormatter` generates larger than what you think the object size is going to be, si keep an eye on that.
+- Save, retrieve, enumerate, and remove credentials from Windows Credential Store
+- Prompt users for credentials via Windows UI dialog or console
+- Store comments and custom attributes with credentials (JSON-serialized)
+- Configurable persistence (Session, LocalMachine, Enterprise)
+- Secure memory zeroing of credential buffers via `RtlZeroMemory` P/Invoke
+- Full nullable reference type annotations
 
-Comments and attributes  are only accessible programmatically. Windows always supported such a feature (via `CREDENTIALW` [structure](https://docs.microsoft.com/en-us/windows/win32/api/wincred/ns-wincred-credentialw)) but `Windows Credential Manager applet` does not have any way to show this information to user. So if an user edits the saved credentials using control panel comments and attributes gets lost. The lack of this information may be used as a tamper check. Note that this information is accessible all programs with can read write to credential store, so don't assume the information is secure from everything. 
+## Installation
 
-#### 4. Save and retrieve credentials with comments and attributes
-```C#
-    var cred = (new NetworkCredential(uName, pwd, domain)).ToICredential();
-    cred.TargetName = "TestSystem_Attributes";
-    cred.Attributes = new Dictionary<string, Object>();
-    var sample = new SampleAttribute() { role = "regular", created = DateTime.UtcNow };
-    cred.Attributes.Add("sampleAttribute", sample);
-    cred.Comment = "This comment is only visible via API, not in Windows UI";
-    cred.SaveCredential();
-```  
+```
+dotnet add package shakeyourbunny.CredentialManager
+```
 
-#### 5. Getting ICredential from previously saved credential
-```C#
-    var cred =  CredentialManager.GetICredential(TargetName);
-    cred.Comment = "Update the credential data and save back";
-    cred.SaveCredential();
-``` 
-#### deprecated
-[AdysTech.CredentialManager.Core](https://www.nuget.org/packages/AdysTech.CredentialManager.Core/)
+Or add a project reference:
+
+```xml
+<ProjectReference Include="path/to/src/shakeyourbunny.CredentialManager/shakeyourbunny.CredentialManager.csproj" />
+```
+
+## Usage
+
+### 1. Save Credentials
+
+```csharp
+var cred = new NetworkCredential("TestUser", "Pwd");
+CredentialManager.SaveCredentials("MyApp", cred);
+
+// With explicit persistence (default is LocalMachine)
+CredentialManager.SaveCredentials("MyApp", cred, persistance: Persistance.Session);
+```
+
+### 2. Retrieve Credentials
+
+```csharp
+var cred = CredentialManager.GetCredentials("MyApp");
+if (cred != null)
+    Console.WriteLine($"User: {cred.UserName}");
+```
+
+### 3. Prompt User for Credentials
+
+```csharp
+bool save = false;
+var cred = CredentialManager.PromptForCredentials("My Service",
+    ref save, "Please log in", "Credentials Required");
+```
+
+### 4. Save and Retrieve Attributes
+
+Attributes are serialized as JSON. Each attribute value must be JSON-serializable and
+the serialized form must not exceed 256 bytes. When read back, attribute values are
+returned as `JsonElement` objects.
+
+```csharp
+var cred = (new NetworkCredential("user", "pass", "domain")).ToICredential();
+cred.TargetName = "MyApp_WithAttribs";
+cred.Attributes = new Dictionary<string, Object>
+{
+    { "role", "admin" },
+    { "tokenExpiry", DateTime.UtcNow.AddHours(1) }
+};
+cred.Comment = "This comment is only visible via API, not in Windows UI";
+cred.SaveCredential();
+
+// Reading back — attributes are JsonElement
+var stored = CredentialManager.GetICredential("MyApp_WithAttribs");
+string role = ((JsonElement)stored.Attributes["role"]).GetString();
+```
+
+### 5. Enumerate and Remove Credentials
+
+```csharp
+var all = CredentialManager.EnumerateICredentials();
+CredentialManager.RemoveCredentials("MyApp");
+```
+
+### 6. Basic Auth Header
+
+```csharp
+var cred = CredentialManager.GetCredentials("MyApp");
+string authHeader = cred.GetBasicAuthString(); // Base64 "user:pass"
+```
+
+## Persistence
+
+The `SaveCredentials` method accepts an optional `Persistance` parameter:
+
+| Value | Behavior |
+|-------|----------|
+| `Session` | Credential exists only for the current logon session, not persisted across reboots |
+| `LocalMachine` | **(Default)** Persisted locally, not synced to domain controllers |
+| `Enterprise` | Persisted and synced to Active Directory domain controllers |
+
+Previous versions hardcoded `Enterprise` for all credentials. v3.0.0 changes the default
+to `LocalMachine` to avoid unintended credential replication across domain controllers.
+
+## Security Improvements (v3.0.0)
+
+- **Replaced BinaryFormatter** with `System.Text.Json` for attribute serialization.
+  BinaryFormatter is deprecated (SYSLIB0011) and vulnerable to arbitrary code execution
+  via deserialization gadgets (CWE-502).
+- **JIT-safe memory zeroing** using `RtlZeroMemory` via P/Invoke. Unlike `Marshal.Copy`
+  with zero bytes, the JIT cannot optimize away an external P/Invoke call.
+- **Configurable persistence** — no longer hardcoded to `Enterprise`.
+- **Correct buffer sizes** for credential UI prompts (`CREDUI_MAX_USERNAME_LENGTH`,
+  `CREDUI_MAX_PASSWORD_LENGTH`).
+
+## Migration from v2.x
+
+### BinaryFormatter Attributes
+
+If you stored credential attributes using v2.x (BinaryFormatter serialization), the
+library includes a one-time migration path:
+
+- **On .NET Standard 2.0**: Legacy BinaryFormatter attributes are automatically read and
+  can be re-saved as JSON by calling `SaveCredential()` again.
+- **On .NET 8.0+**: BinaryFormatter is disabled by the runtime. Legacy attributes cannot
+  be read. Use the netstandard2.0 build for one-time migration if needed.
+
+### Attribute Type Changes
+
+Attribute values read back from the store are now `JsonElement` objects instead of the
+original .NET types. Use `JsonElement.Deserialize<T>()` to convert:
+
+```csharp
+// v2.x
+var role = (string)cred.Attributes["role"];
+
+// v3.0.0
+var role = ((JsonElement)cred.Attributes["role"]).GetString();
+// or for complex types:
+var info = ((JsonElement)cred.Attributes["info"]).Deserialize<MyType>();
+```
+
+### Default Persistence
+
+The default persistence changed from `Enterprise` to `LocalMachine`. If your application
+relies on domain-replicated credentials, explicitly pass `Persistance.Enterprise`.
+
+## Building
+
+```
+dotnet build
+dotnet test
+```
+
+## License
+
+[MIT](LICENSE) — Copyright (c) 2018 Adys Tech, Copyright (c) 2026 shakeyourbunny
