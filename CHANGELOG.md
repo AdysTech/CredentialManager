@@ -3,6 +3,68 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [3.1.0] - 2026-02-24
+
+### Breaking Changes
+
+- **`Persistance` renamed to `Persistence`** — The misspelled enum, property, and parameter
+  names have been corrected across the entire API surface. Update all references:
+  `Persistance` → `Persistence`, `persistance:` → `persistence:`.
+- **BinaryFormatter fallback removed entirely** — The netstandard2.0 migration path for
+  legacy BinaryFormatter-encoded attributes has been removed. Legacy attributes are now
+  silently skipped with a debug message. This eliminates the CWE-502 attack surface
+  completely rather than keeping it as a migration convenience.
+- **`PromptForCredentialsConsole` return type** changed from `NetworkCredential` to
+  `NetworkCredential?` — returns null when the user cancels, throws
+  `CredentialAPIException` on other failures. Previously ignored the return code entirely.
+- **`EnumerateICredentials` error handling** — Unexpected exceptions now throw
+  `CredentialAPIException` instead of silently returning null (which was indistinguishable
+  from "no credentials found").
+
+### Security
+
+- **Zero credential buffer in `GetBasicAuthString`** — The intermediate UTF-8 byte array
+  containing `username:password` is now cleared via `Array.Clear()` after Base64 encoding.
+- **Managed string limitation documented** — `CredentialBlob` property now has XML
+  documentation explaining that managed strings cannot be reliably zeroed from memory.
+
+### Fixed
+
+- **`GetInputBuffer` buffer sizing** — Now queries the required buffer size from
+  `CredPackAuthenticationBuffer` instead of using a hardcoded 1024-byte buffer.
+- **Comment byte count** — `SaveCredential` now uses `Encoding.Unicode.GetByteCount()`
+  instead of allocating a temporary byte array with `GetBytes().Length`.
+- **`SecureZeroMemory` P/Invoke** — Added XML remarks explaining why `RtlZeroMemory` is
+  used as the entry point and why it provides the same guarantees as the compiler intrinsic
+  across the P/Invoke boundary.
+
+### Added
+
+- **6 Roslyn analyzer suites** — Microsoft.CodeAnalysis.NetAnalyzers, StyleCop,
+  SecurityCodeScan, Roslynator, SonarAnalyzer, and Meziantou.Analyzer. All configured
+  in `Directory.Build.props` and `.editorconfig` with zero warnings across ~2,000+ rules.
+- **Source Link** — PDB files map to GitHub source for debugger step-through from NuGet.
+- **NuGet package metadata** — README included in package, search tags, release notes.
+- **Demo application** — `samples/CredentialManager.Demo` exercises the full API surface.
+
+### Changed
+
+- **Test self-containment** — Added `[TestCleanup]` to remove test credentials after each
+  test. `TestGetCredentials` now saves its own credential instead of depending on
+  `TestSaveCredentials` running first.
+- **`TestEnumerateCredentialWithTarget`** — Added missing `[TestMethod]` attribute with
+  `[Ignore]` (requires specific host-local credential).
+- **Exception types** — Object state validation in `SaveCredential` now throws
+  `InvalidOperationException` instead of `ArgumentException` with property names. Matches
+  .NET conventions (CA2208).
+- **String comparisons** — All string equality checks use `string.Equals()` with
+  `StringComparison.Ordinal` (MA0006). All `Dictionary<string, ...>` constructors
+  specify `StringComparer.Ordinal` (MA0002).
+- **Unused parameter removed** — Private `PromptForCredentials` overload no longer accepts
+  an unused `target` parameter (S1172).
+
+---
+
 ## [3.0.0] - 2026-02-23
 
 ### Overview
@@ -24,7 +86,7 @@ The following issues were identified during the audit:
    attribute field by another process with store access.
 
 2. **Persistence Hardcoded to Enterprise (CRITICAL, #69)** — All credentials were
-   saved with `Persistance.Enterprise` regardless of caller intent. Enterprise
+   saved with `Persistence.Enterprise` regardless of caller intent. Enterprise
    persistence syncs credentials to Active Directory domain controllers, meaning
    credentials intended to be local-only were being replicated across the domain.
    This is both a security exposure (broader attack surface) and a correctness bug.
@@ -59,8 +121,8 @@ The following issues were identified during the audit:
   A one-time migration path reads legacy BinaryFormatter-encoded attributes and
   re-saves them as JSON on next write (netstandard2.0 only; .NET 8+ cannot read
   legacy data as BinaryFormatter is disabled by the runtime).
-- **Expose Persistance parameter** — `SaveCredentials()` now accepts an optional
-  `Persistance` parameter (default: `LocalMachine`). Previously hardcoded to
+- **Expose Persistence parameter** — `SaveCredentials()` now accepts an optional
+  `Persistence` parameter (default: `LocalMachine`). Previously hardcoded to
   `Enterprise`. Fixes #69.
 - **JIT-safe memory zeroing** — Native credential buffers are zeroed using
   `RtlZeroMemory` (via P/Invoke to `kernel32.dll`) before `CredFree()`. As an

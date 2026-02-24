@@ -6,6 +6,8 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Text.Json;
 
+#pragma warning disable SCS0015 // Hardcoded passwords — test credentials are intentional
+
 namespace CredentialManagerTest;
 
 [TestClass]
@@ -14,6 +16,33 @@ public class CredentialManagerTest
     private const string uName = "ZYYM3ufm3kFY9ZJZUAqYFQfzxcRc9rzdYxUwqEhBqqdrHttrh";
     private const string pwd = "5NJuqKfJBtAZYYM3ufm3kFY9ZJZUAqYFQfzxcRc9rzdYxUwqEhBqqdrHttrhcvnnDPFHEn3L";
     private const string domain = "test.example.com";
+
+    private static readonly JsonSerializerOptions s_jsonOptions = new() { IncludeFields = true };
+
+    /// <summary>
+    /// All target names created by tests. Cleaned up in TestCleanup to ensure
+    /// tests are self-contained and don't depend on execution order.
+    /// </summary>
+    private static readonly string[] TestTargets =
+    {
+        "TestSystem", "TestCredWithoutUserName", "TestCredWithPasswordSingleCharacter",
+        "TestSystem_comment", "TestSystem_Attributes", "TestSystem_LongComment",
+        "TestSystem_LongPassword", "TestSystem_nullPwd", "TestWindowsCredential",
+        "TestDeletingWindowsCredential", "TestSystem_DefaultPersist",
+        "TestSystem_Session", "TestSystem_Enterprise", "TestSystem_JsonRoundTrip_Str",
+        "TestSystem_JsonRoundTrip_Num", "TestSystem_JsonRoundTrip_Struct",
+        "TestSystem1"
+    };
+
+    [TestCleanup]
+    public void TestCleanup()
+    {
+        foreach (var target in TestTargets)
+        {
+            try { CredentialManager.RemoveCredentials(target); } catch (CredentialAPIException) { /* may not exist */ }
+            try { CredentialManager.RemoveCredentials(target, CredentialType.Windows); } catch (CredentialAPIException) { /* may not exist */ }
+        }
+    }
 
     struct SampleAttribute
     {
@@ -35,9 +64,13 @@ public class CredentialManagerTest
     [TestMethod, TestCategory("CI")]
     public void TestGetCredentials()
     {
-        var cred = CredentialManager.GetCredentials("TestSystem");
-        Assert.IsNotNull(cred, "GetCredential failed");
-        Assert.IsTrue(uName == cred.UserName && pwd == cred.Password && domain == cred.Domain, "Saved and retrieved data doesn't match");
+        // Self-contained: save first, then retrieve
+        var cred = new NetworkCredential(uName, pwd, domain);
+        CredentialManager.SaveCredentials("TestSystem", cred);
+
+        var retrieved = CredentialManager.GetCredentials("TestSystem");
+        Assert.IsNotNull(retrieved, "GetCredential failed");
+        Assert.IsTrue(string.Equals(uName, retrieved.UserName, StringComparison.Ordinal) && string.Equals(pwd, retrieved.Password, StringComparison.Ordinal) && string.Equals(domain, retrieved.Domain, StringComparison.Ordinal), "Saved and retrieved data doesn't match");
     }
 
     [TestMethod, TestCategory("CI")]
@@ -51,18 +84,18 @@ public class CredentialManagerTest
     public void TestGetCredentials_NullUserName()
     {
         var cred = new NetworkCredential(string.Empty, "P@$$w0rd");
-        var res = CredentialManager.SaveCredentials("TestCredWithoutUserName", cred);
+        CredentialManager.SaveCredentials("TestCredWithoutUserName", cred);
         var cred1 = CredentialManager.GetCredentials("TestCredWithoutUserName");
-        Assert.IsTrue(cred1!.UserName == cred.UserName && cred1.Password == cred.Password && cred1.Domain == cred.Domain, "Saved and retrieved data doesn't match");
+        Assert.IsTrue(string.Equals(cred1!.UserName, cred.UserName, StringComparison.Ordinal) && string.Equals(cred1.Password, cred.Password, StringComparison.Ordinal) && string.Equals(cred1.Domain, cred.Domain, StringComparison.Ordinal), "Saved and retrieved data doesn't match");
     }
 
     [TestMethod, TestCategory("CI")]
     public void TestGetCredentials_PasswordLengthOne()
     {
         var cred = new NetworkCredential("admin", "P");
-        var res = CredentialManager.SaveCredentials("TestCredWithPasswordSingleCharacter", cred);
+        CredentialManager.SaveCredentials("TestCredWithPasswordSingleCharacter", cred);
         var cred1 = CredentialManager.GetCredentials("TestCredWithPasswordSingleCharacter");
-        Assert.IsTrue(cred1!.Password == cred.Password, "Saved and retrieved password doesn't match");
+        Assert.IsTrue(string.Equals(cred1!.Password, cred.Password, StringComparison.Ordinal), "Saved and retrieved password doesn't match");
     }
 
     // -------------------------------------------------------------------
@@ -79,7 +112,7 @@ public class CredentialManagerTest
 
         var cred1 = CredentialManager.GetICredential(cred.TargetName);
         Assert.IsNotNull(cred1, "GetICredential failed");
-        Assert.IsTrue(cred1.UserName == cred.UserName && cred1.CredentialBlob == cred.CredentialBlob && cred1.Comment == cred.Comment, "Saved and retrieved data doesn't match");
+        Assert.IsTrue(string.Equals(cred1.UserName, cred.UserName, StringComparison.Ordinal) && string.Equals(cred1.CredentialBlob, cred.CredentialBlob, StringComparison.Ordinal) && string.Equals(cred1.Comment, cred.Comment, StringComparison.Ordinal), "Saved and retrieved data doesn't match");
     }
 
     [TestMethod, TestCategory("CI")]
@@ -87,7 +120,7 @@ public class CredentialManagerTest
     {
         var cred = (new NetworkCredential(uName, pwd, domain)).ToICredential()!;
         cred.TargetName = "TestSystem_Attributes";
-        cred.Attributes = new Dictionary<string, Object>();
+        cred.Attributes = new Dictionary<string, Object>(StringComparer.Ordinal);
 
         var sample = new SampleAttribute() { role = "regular", created = DateTime.UtcNow };
         cred.Attributes.Add("sampleAttribute", sample);
@@ -95,12 +128,12 @@ public class CredentialManagerTest
         Assert.IsTrue(cred.SaveCredential(), "SaveCredential on ICredential failed");
         var cred1 = CredentialManager.GetICredential(cred.TargetName);
         Assert.IsNotNull(cred1, "GetICredential failed");
-        Assert.IsTrue(cred1.UserName == cred.UserName && cred1.CredentialBlob == cred.CredentialBlob && cred1.Attributes?.Count == cred.Attributes?.Count, "Saved and retrieved data doesn't match");
+        Assert.IsTrue(string.Equals(cred1.UserName, cred.UserName, StringComparison.Ordinal) && string.Equals(cred1.CredentialBlob, cred.CredentialBlob, StringComparison.Ordinal) && cred1.Attributes?.Count == cred.Attributes?.Count, "Saved and retrieved data doesn't match");
 
         // Attributes come back as JsonElement — deserialize to verify round-trip
-        var jsonOptions = new JsonSerializerOptions { IncludeFields = true };
+        var jsonOptions = s_jsonOptions;
         var retrieved = ((JsonElement)cred1.Attributes!["sampleAttribute"]).Deserialize<SampleAttribute>(jsonOptions);
-        Assert.IsTrue(retrieved.role == sample.role, "Saved and retrieved attribute data doesn't match");
+        Assert.IsTrue(string.Equals(retrieved.role, sample.role, StringComparison.Ordinal), "Saved and retrieved attribute data doesn't match");
     }
 
     [TestMethod, TestCategory("CI")]
@@ -110,7 +143,7 @@ public class CredentialManagerTest
         var cred = (new NetworkCredential(test, test, test)).ToICredential()!;
         cred.TargetName = "TestSystem_LongComment";
         cred.Comment = new String('*', 257);
-        Assert.ThrowsException<ArgumentException>(() => cred.SaveCredential(), "SaveCredential didn't throw ArgumentException for larger than 256 byte Comment");
+        Assert.ThrowsException<InvalidOperationException>(() => cred.SaveCredential(), "SaveCredential didn't throw InvalidOperationException for larger than 256 byte Comment");
     }
 
     [TestMethod, TestCategory("CI")]
@@ -120,8 +153,8 @@ public class CredentialManagerTest
         string test = "test";
         var cred = (new NetworkCredential(test, new String('*', tooLong), test)).ToICredential()!;
         cred.TargetName = "TestSystem_LongPassword";
-        Assert.ThrowsException<ArgumentException>(() => cred.SaveCredential(),
-            $"SaveCredential didn't throw ArgumentException for exceeding {Credential.MaxCredentialBlobSize} bytes.");
+        Assert.ThrowsException<InvalidOperationException>(() => cred.SaveCredential(),
+            $"SaveCredential didn't throw InvalidOperationException for exceeding {Credential.MaxCredentialBlobSize} bytes.");
     }
 
     [TestMethod, TestCategory("CI")]
@@ -138,7 +171,7 @@ public class CredentialManagerTest
         Assert.IsNotNull(cred.SaveCredential(), "SaveCredential should handle passwords of token size");
 
         var cred1 = CredentialManager.GetCredentials("TestSystem_LongPassword");
-        Assert.IsTrue(cred1!.Password == net.Password, "Saved and retrieved password doesn't match");
+        Assert.IsTrue(string.Equals(cred1!.Password, net.Password, StringComparison.Ordinal), "Saved and retrieved password doesn't match");
     }
 
     [TestMethod, TestCategory("CI")]
@@ -147,7 +180,7 @@ public class CredentialManagerTest
         string test = "test";
         var cred = (new NetworkCredential(test, test, test)).ToICredential()!;
         cred.TargetName = "TestSystem_Attributes";
-        cred.Attributes = new Dictionary<string, Object>();
+        cred.Attributes = new Dictionary<string, Object>(StringComparer.Ordinal);
         cred.Attributes.Add("sampleAttribute", null!);
 
         Assert.ThrowsException<ArgumentNullException>(() => cred.SaveCredential(), "SaveCredential didn't throw ArgumentNullException for null valued Attribute");
@@ -159,7 +192,7 @@ public class CredentialManagerTest
         string test = "test";
         var cred = (new NetworkCredential(test, test, test)).ToICredential()!;
         cred.TargetName = "TestSystem_Attributes";
-        cred.Attributes = new Dictionary<string, Object>();
+        cred.Attributes = new Dictionary<string, Object>(StringComparer.Ordinal);
         // A 300-char string serializes to 302+ bytes in JSON (with quotes), exceeding the 256-byte limit
         cred.Attributes.Add("sampleAttribute", new string('x', 300));
 
@@ -173,22 +206,29 @@ public class CredentialManagerTest
     [TestMethod, TestCategory("CI")]
     public void TestEnumerateCredentials()
     {
+        // Ensure at least one credential exists
+        CredentialManager.SaveCredentials("TestSystem", new NetworkCredential(uName, pwd, domain));
+
         var creds = CredentialManager.EnumerateCredentials();
         Assert.IsNotNull(creds, "EnumerateCredentials failed");
-        Assert.IsTrue(creds?.Count > 0, "No credentials stored in the system");
+        Assert.IsTrue(creds?.Count > 0, "No credentials found after saving one");
     }
 
     [TestMethod, TestCategory("CI")]
     public void TestEnumerateICredentials()
     {
+        // Ensure at least one credential exists
+        CredentialManager.SaveCredentials("TestSystem", new NetworkCredential(uName, pwd, domain));
+
         var creds = CredentialManager.EnumerateICredentials();
         Assert.IsNotNull(creds, "EnumerateICredentials failed");
-        Assert.IsTrue(creds?.Count > 0, "No credentials stored in the system");
+        Assert.IsTrue(creds?.Count > 0, "No credentials found after saving one");
     }
 
     /// <summary>
     /// This test assumes you have a Generic Credential for https://github.com stored on your system.
     /// </summary>
+    [TestMethod, Ignore("Requires git:https://github.com credential on the host system")]
     public void TestEnumerateCredentialWithTarget()
     {
         var creds = CredentialManager.EnumerateCredentials(@"git:https://github.com");
@@ -204,12 +244,12 @@ public class CredentialManagerTest
     public void TestSaveCredentials_Windows()
     {
         var cred = new NetworkCredential("admin", "P@$$w0rd");
-        var res = CredentialManager.SaveCredentials("TestWindowsCredential", cred, CredentialType.Windows);
+        CredentialManager.SaveCredentials("TestWindowsCredential", cred, CredentialType.Windows);
         var cred1 = CredentialManager.GetCredentials("TestWindowsCredential", CredentialType.Windows);
         //https://msdn.microsoft.com/en-us/library/windows/desktop/aa374788(v=vs.85).aspx
         //CredentialType.Windows internally gets translated to CRED_TYPE_DOMAIN_PASSWORD
         //as per MSDN, for this type CredentialBlob can only be read by the authentication packages.
-        Assert.IsTrue(cred1 != null && cred1.UserName == cred.UserName, "Saved and retrieved data doesn't match");
+        Assert.IsTrue(cred1 != null && string.Equals(cred1.UserName, cred.UserName, StringComparison.Ordinal), "Saved and retrieved data doesn't match");
     }
 
     [TestMethod, TestCategory("CI")]
@@ -221,7 +261,7 @@ public class CredentialManagerTest
 
         var cred1 = CredentialManager.GetICredential(saved.TargetName, CredentialType.Windows);
         Assert.IsNotNull(cred1, "GetICredential failed");
-        Assert.IsTrue(cred1.UserName == saved.UserName, "Saved and retrieved data doesn't match");
+        Assert.IsTrue(string.Equals(cred1.UserName, saved.UserName, StringComparison.Ordinal), "Saved and retrieved data doesn't match");
         Assert.IsTrue(CredentialManager.RemoveCredentials(saved.TargetName, saved.Type), "RemoveCredentials returned false");
 
         cred1 = CredentialManager.GetICredential(saved.TargetName);
@@ -308,7 +348,7 @@ public class CredentialManagerTest
             Assert.IsNotNull(CredentialManager.SaveCredentials("TestSystem", cred), "SaveCredential failed");
             cred = CredentialManager.GetCredentials("TestSystem");
             Assert.IsNotNull(cred, "GetCredential failed");
-            Assert.IsTrue(usr == cred.UserName && pwdLocal == cred.Password && dmn == cred.Domain, "Saved and retrieved data doesn't match");
+            Assert.IsTrue(string.Equals(usr, cred.UserName, StringComparison.Ordinal) && string.Equals(pwdLocal, cred.Password, StringComparison.Ordinal) && string.Equals(dmn, cred.Domain, StringComparison.Ordinal), "Saved and retrieved data doesn't match");
         }
     }
 
@@ -327,12 +367,12 @@ public class CredentialManagerTest
             Assert.IsNotNull(CredentialManager.SaveCredentials("TestSystem1", cred), "SaveCredential failed");
             cred = CredentialManager.GetCredentials("TestSystem1");
             Assert.IsNotNull(cred, "GetCredential failed");
-            Assert.IsTrue(usr == cred.UserName && pwdLocal == cred.Password && dmn == cred.Domain, "Saved and retrieved data doesn't match");
+            Assert.IsTrue(string.Equals(usr, cred.UserName, StringComparison.Ordinal) && string.Equals(pwdLocal, cred.Password, StringComparison.Ordinal) && string.Equals(dmn, cred.Domain, StringComparison.Ordinal), "Saved and retrieved data doesn't match");
         }
     }
 
     // -------------------------------------------------------------------
-    // Persistence parameter (new in v3.0.0)
+    // Persistence parameter (v3.1.0)
     // -------------------------------------------------------------------
 
     [TestMethod, TestCategory("CI")]
@@ -341,7 +381,7 @@ public class CredentialManagerTest
         var cred = new NetworkCredential(uName, pwd, domain);
         var saved = CredentialManager.SaveCredentials("TestSystem_DefaultPersist", cred);
         Assert.IsNotNull(saved, "SaveCredential failed");
-        Assert.AreEqual(Persistance.LocalMachine, saved.Persistance, "Default persistence should be LocalMachine");
+        Assert.AreEqual(Persistence.LocalMachine, saved.Persistence, "Default persistence should be LocalMachine");
         CredentialManager.RemoveCredentials("TestSystem_DefaultPersist");
     }
 
@@ -349,9 +389,9 @@ public class CredentialManagerTest
     public void TestSaveCredentials_SessionPersistence()
     {
         var cred = new NetworkCredential(uName, pwd, domain);
-        var saved = CredentialManager.SaveCredentials("TestSystem_Session", cred, persistance: Persistance.Session);
+        var saved = CredentialManager.SaveCredentials("TestSystem_Session", cred, persistence: Persistence.Session);
         Assert.IsNotNull(saved, "SaveCredential with Session persistence failed");
-        Assert.AreEqual(Persistance.Session, saved.Persistance, "Persistence should be Session");
+        Assert.AreEqual(Persistence.Session, saved.Persistence, "Persistence should be Session");
         CredentialManager.RemoveCredentials("TestSystem_Session");
     }
 
@@ -359,14 +399,14 @@ public class CredentialManagerTest
     public void TestSaveCredentials_EnterprisePersistence()
     {
         var cred = new NetworkCredential(uName, pwd, domain);
-        var saved = CredentialManager.SaveCredentials("TestSystem_Enterprise", cred, persistance: Persistance.Enterprise);
+        var saved = CredentialManager.SaveCredentials("TestSystem_Enterprise", cred, persistence: Persistence.Enterprise);
         Assert.IsNotNull(saved, "SaveCredential with Enterprise persistence failed");
-        Assert.AreEqual(Persistance.Enterprise, saved.Persistance, "Persistence should be Enterprise");
+        Assert.AreEqual(Persistence.Enterprise, saved.Persistence, "Persistence should be Enterprise");
         CredentialManager.RemoveCredentials("TestSystem_Enterprise");
     }
 
     // -------------------------------------------------------------------
-    // JSON attribute serialization round-trip (new in v3.0.0)
+    // JSON attribute serialization round-trip (v3.1.0)
     // -------------------------------------------------------------------
 
     [TestMethod, TestCategory("CI")]
@@ -374,7 +414,7 @@ public class CredentialManagerTest
     {
         var cred = (new NetworkCredential(uName, pwd, domain)).ToICredential()!;
         cred.TargetName = "TestSystem_JsonRoundTrip_Str";
-        cred.Attributes = new Dictionary<string, Object>
+        cred.Attributes = new Dictionary<string, Object>(StringComparer.Ordinal)
         {
             { "greeting", "hello" }
         };
@@ -396,7 +436,7 @@ public class CredentialManagerTest
     {
         var cred = (new NetworkCredential(uName, pwd, domain)).ToICredential()!;
         cred.TargetName = "TestSystem_JsonRoundTrip_Num";
-        cred.Attributes = new Dictionary<string, Object>
+        cred.Attributes = new Dictionary<string, Object>(StringComparer.Ordinal)
         {
             { "count", 42 }
         };
@@ -417,7 +457,7 @@ public class CredentialManagerTest
     {
         var cred = (new NetworkCredential(uName, pwd, domain)).ToICredential()!;
         cred.TargetName = "TestSystem_JsonRoundTrip_Struct";
-        cred.Attributes = new Dictionary<string, Object>();
+        cred.Attributes = new Dictionary<string, Object>(StringComparer.Ordinal);
 
         var sample = new SampleAttribute() { role = "admin", created = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) };
         cred.Attributes.Add("userInfo", sample);
@@ -427,7 +467,7 @@ public class CredentialManagerTest
         var cred1 = CredentialManager.GetICredential(cred.TargetName);
         Assert.IsNotNull(cred1);
 
-        var jsonOptions = new JsonSerializerOptions { IncludeFields = true };
+        var jsonOptions = s_jsonOptions;
         var retrieved = ((JsonElement)cred1.Attributes!["userInfo"]).Deserialize<SampleAttribute>(jsonOptions);
         Assert.AreEqual("admin", retrieved.role);
         Assert.AreEqual(sample.created, retrieved.created);
@@ -436,7 +476,7 @@ public class CredentialManagerTest
     }
 
     // -------------------------------------------------------------------
-    // Null parameter handling (new in v3.0.0)
+    // Null parameter handling (v3.1.0)
     // -------------------------------------------------------------------
 
     [TestMethod, TestCategory("CI")]

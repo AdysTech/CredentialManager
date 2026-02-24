@@ -17,7 +17,7 @@ namespace shakeyourbunny.CredentialManager;
 /// </summary>
 public static class CredentialManager
 {
-    private static bool PromptForCredentials(string target, NativeCode.CredentialUIInfo credUI, ref bool save, ref string user, out string password, out string domain)
+    private static bool PromptForCredentials(NativeCode.CredentialUIInfo credUI, ref bool save, ref string user, out string password, out string domain)
     {
         password = string.Empty;
         domain = string.Empty;
@@ -106,13 +106,16 @@ public static class CredentialManager
             var usernameBuf = new StringBuilder(user);
             var passwordBuf = new StringBuilder();
 
-            inCredSize = 1024;
-            inCredBuffer = Marshal.AllocCoTaskMem(inCredSize);
-            if (NativeCode.CredPackAuthenticationBuffer(0x00, usernameBuf, passwordBuf, inCredBuffer, ref inCredSize))
-                return;
+            // Query required buffer size first (pass IntPtr.Zero, size 0)
+            inCredSize = 0;
+            NativeCode.CredPackAuthenticationBuffer(0x00, usernameBuf, passwordBuf, IntPtr.Zero, ref inCredSize);
 
-            if (inCredBuffer != IntPtr.Zero)
+            if (inCredSize > 0)
             {
+                inCredBuffer = Marshal.AllocCoTaskMem(inCredSize);
+                if (NativeCode.CredPackAuthenticationBuffer(0x00, usernameBuf, passwordBuf, inCredBuffer, ref inCredSize))
+                    return;
+
                 NativeCode.CoTaskMemFree(inCredBuffer);
             }
         }
@@ -149,7 +152,7 @@ public static class CredentialManager
             pszCaptionText = " ",
             hbmBanner = IntPtr.Zero
         };
-        return PromptForCredentials(target, credUI, ref save, ref user, out password, out domain);
+        return PromptForCredentials(credUI, ref save, ref user, out password, out domain);
     }
 
     internal static bool PromptForCredentials(string target, ref bool save, string message, string caption, ref string user, out string password, out string domain, IntPtr parentWindowHandle = default)
@@ -161,7 +164,7 @@ public static class CredentialManager
             pszCaptionText = caption,
             hbmBanner = IntPtr.Zero
         };
-        return PromptForCredentials(target, credUI, ref save, ref user, out password, out domain);
+        return PromptForCredentials(credUI, ref save, ref user, out password, out domain);
     }
 
     /// <summary>
@@ -222,8 +225,8 @@ public static class CredentialManager
     /// Accepts credentials in a console window.
     /// </summary>
     /// <param name="target">A descriptive text for where the credentials being asked are used for.</param>
-    /// <returns>NetworkCredential object containing the user name, password, and domain.</returns>
-    public static NetworkCredential PromptForCredentialsConsole(string target)
+    /// <returns>NetworkCredential object containing the user name, password, and domain; or null if the user cancelled.</returns>
+    public static NetworkCredential? PromptForCredentialsConsole(string target)
     {
         if (target == null) throw new ArgumentNullException(nameof(target));
 
@@ -237,11 +240,26 @@ public static class CredentialManager
         NativeCode.CredentialUIFlags flags = NativeCode.CredentialUIFlags.CompleteUsername | NativeCode.CredentialUIFlags.ExcludeCertificates | NativeCode.CredentialUIFlags.GenericCredentials;
 
         // Prompt the user
-        NativeCode.CredentialUIReturnCodes returnCode = NativeCode.CredUICmdLinePromptForCredentials(
+        NativeCode.CredentialUIReturnCodes promptResult = NativeCode.CredUICmdLinePromptForCredentials(
             target, IntPtr.Zero, 0,
             userID, NativeCode.CREDUI_MAX_USERNAME_LENGTH,
             userPassword, NativeCode.CREDUI_MAX_PASSWORD_LENGTH,
             ref save, flags);
+
+        if (promptResult == NativeCode.CredentialUIReturnCodes.Cancelled)
+        {
+            // Zero the password buffer even on cancel
+            for (int i = 0; i < userPassword.Length; i++)
+                userPassword[i] = '\0';
+            return null;
+        }
+
+        if (promptResult != NativeCode.CredentialUIReturnCodes.Success)
+        {
+            for (int i = 0; i < userPassword.Length; i++)
+                userPassword[i] = '\0';
+            throw new CredentialAPIException($"Console credential prompt failed", "CredUICmdLinePromptForCredentials", (int)promptResult);
+        }
 
         string password = userPassword.ToString();
 
@@ -252,8 +270,8 @@ public static class CredentialManager
         var userBuilder = new StringBuilder(NativeCode.CREDUI_MAX_USERNAME_LENGTH);
         var domainBuilder = new StringBuilder(NativeCode.CREDUI_MAX_USERNAME_LENGTH);
 
-        returnCode = NativeCode.CredUIParseUserName(userID.ToString(), userBuilder, NativeCode.CREDUI_MAX_USERNAME_LENGTH, domainBuilder, NativeCode.CREDUI_MAX_USERNAME_LENGTH);
-        switch (returnCode)
+        var parseResult = NativeCode.CredUIParseUserName(userID.ToString(), userBuilder, NativeCode.CREDUI_MAX_USERNAME_LENGTH, domainBuilder, NativeCode.CREDUI_MAX_USERNAME_LENGTH);
+        switch (parseResult)
         {
             case NativeCode.CredentialUIReturnCodes.Success:
                 user = userBuilder.ToString();
@@ -266,10 +284,10 @@ public static class CredentialManager
                 break;
 
             case NativeCode.CredentialUIReturnCodes.InsufficientBuffer:
-                throw new OutOfMemoryException();
+                throw new CredentialAPIException("Buffer too small for parsed user name", "CredUIParseUserName", (int)parseResult);
 
             case NativeCode.CredentialUIReturnCodes.InvalidParameter:
-                throw new ArgumentException("userName");
+                throw new CredentialAPIException("Invalid parameter for user name parsing", "CredUIParseUserName", (int)parseResult);
         }
         return new NetworkCredential(user, password, domain);
     }
@@ -281,11 +299,11 @@ public static class CredentialManager
     /// <param name="credential">Credential to store.</param>
     /// <param name="type">Credential type.</param>
     /// <param name="AllowNullPassword">If true, allows saving credentials with an empty password.</param>
-    /// <param name="persistance">How the credential should be persisted. Defaults to LocalMachine (local only, no domain roaming).</param>
+    /// <param name="persistence">How the credential should be persisted. Defaults to LocalMachine (local only, no domain roaming).</param>
     /// <returns>The saved ICredential on success, or null on failure.</returns>
     /// <exception cref="ArgumentNullException">Thrown when target or credential is null.</exception>
     /// <exception cref="CredentialAPIException">Thrown when the Windows API call fails.</exception>
-    public static ICredential? SaveCredentials(string target, NetworkCredential credential, CredentialType type = CredentialType.Generic, bool AllowNullPassword = false, Persistance persistance = Persistance.LocalMachine)
+    public static ICredential? SaveCredentials(string target, NetworkCredential credential, CredentialType type = CredentialType.Generic, bool AllowNullPassword = false, Persistence persistence = Persistence.LocalMachine)
     {
         if (target == null) throw new ArgumentNullException(nameof(target));
         if (credential == null) throw new ArgumentNullException(nameof(credential));
@@ -293,7 +311,7 @@ public static class CredentialManager
         var cred = new Credential(credential)
         {
             TargetName = target,
-            Persistance = persistance,
+            Persistence = persistence,
             Type = type
         };
         if (cred.SaveCredential(AllowNullPassword))
@@ -335,10 +353,7 @@ public static class CredentialManager
     /// <returns>A list of ICredential objects if found, null if none match.</returns>
     public static List<ICredential>? EnumerateICredentials(string? target = null)
     {
-        IntPtr pCredentials = IntPtr.Zero;
-        uint count = 0;
-
-        var success = NativeCode.CredEnumerate(target, 0, out count, out pCredentials);
+        var success = NativeCode.CredEnumerate(target, 0, out uint count, out IntPtr pCredentials);
 
         if (!success)
         {
@@ -358,10 +373,13 @@ public static class CredentialManager
             using var criticalSection = new CriticalCredentialHandle(pCredentials, count);
             credentials = criticalSection.EnumerateCredentials(count);
         }
+        catch (CredentialAPIException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Failed to enumerate credentials: {ex.GetType().Name}: {ex.Message}");
-            return null;
+            throw new CredentialAPIException($"Failed to enumerate credentials: {ex.Message}", "CredEnumerate", 0);
         }
 
         return credentials.Select(c => c as ICredential).ToList();
@@ -397,7 +415,14 @@ public static class CredentialManager
         if (cred == null) throw new ArgumentNullException(nameof(cred));
 
         byte[] credentialBuffer = new UTF8Encoding().GetBytes(cred.UserName + ":" + cred.Password);
-        return Convert.ToBase64String(credentialBuffer);
+        try
+        {
+            return Convert.ToBase64String(credentialBuffer);
+        }
+        finally
+        {
+            Array.Clear(credentialBuffer, 0, credentialBuffer.Length);
+        }
     }
 
     /// <summary>

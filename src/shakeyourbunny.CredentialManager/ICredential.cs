@@ -42,7 +42,7 @@ public interface ICredential
     /// <summary>
     /// Gets or sets the persistence type (Session, LocalMachine, or Enterprise).
     /// </summary>
-    Persistance Persistance { get; set; }
+    Persistence Persistence { get; set; }
 
     /// <summary>
     /// Gets or sets custom attributes associated with the credential.

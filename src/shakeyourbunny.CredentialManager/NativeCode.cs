@@ -219,8 +219,14 @@ internal static class NativeCode
 
     /// <summary>
     /// Fills a block of memory with zeros in a way that cannot be optimized away by the JIT.
-    /// Uses RtlZeroMemory via P/Invoke — the external call boundary prevents dead store elimination.
     /// </summary>
+    /// <remarks>
+    /// Named <c>SecureZeroMemory</c> for intent clarity, but the actual entry point is
+    /// <c>RtlZeroMemory</c>. The native <c>SecureZeroMemory</c> is a compiler intrinsic
+    /// (volatile write loop) that cannot be called via P/Invoke. However, since P/Invoke
+    /// calls cross the managed/native boundary, the JIT cannot optimize away the write —
+    /// giving us the same dead-store-elimination resistance that the intrinsic provides.
+    /// </remarks>
     [DllImport("kernel32.dll", EntryPoint = "RtlZeroMemory", SetLastError = false)]
     internal static extern void SecureZeroMemory(IntPtr dest, UIntPtr size);
 }

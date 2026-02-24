@@ -6,37 +6,11 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 
-#if !NET8_0_OR_GREATER
-using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
-#endif
 
 namespace shakeyourbunny.CredentialManager;
 
 internal class Credential : ICredential
 {
-    /// <summary>
-    /// JSON serialization options used for credential attribute serialization.
-    /// Includes fields to support structs with public fields (common pattern for simple attribute types).
-    /// </summary>
-    internal static readonly JsonSerializerOptions s_jsonOptions = new()
-    {
-        IncludeFields = true,
-        WriteIndented = false
-    };
-
-    public CredentialType Type { get; set; }
-    public string TargetName { get; set; } = string.Empty;
-    public string? Comment { get; set; }
-    public DateTime LastWritten { get; set; }
-    public string? CredentialBlob { get; set; }
-    public Persistance Persistance { get; set; }
-    public IDictionary<string, Object>? Attributes { get; set; }
-    public string? UserName { get; set; }
-
-    public UInt32 Flags;
-    public string? TargetAlias;
-
     /// <summary>
     /// Maximum size in bytes of a credential that can be stored. While the API
     /// documentation lists 512 as the max size, the current Windows SDK sets
@@ -56,6 +30,34 @@ internal class Credential : ICredential
     /// </remarks>
     internal const int MaxCredentialBlobSize = 2560;
 
+    /// <summary>
+    /// JSON serialization options used for credential attribute serialization.
+    /// Includes fields to support structs with public fields (common pattern for simple attribute types).
+    /// </summary>
+    internal static readonly JsonSerializerOptions s_jsonOptions = new()
+    {
+        IncludeFields = true,
+        WriteIndented = false
+    };
+
+    public CredentialType Type { get; set; }
+    public string TargetName { get; set; } = string.Empty;
+    public string? Comment { get; set; }
+    public DateTime LastWritten { get; set; }
+    /// <summary>
+    /// The credential secret (password or token) as a managed string.
+    /// Note: Managed strings are immutable and cannot be reliably zeroed from memory.
+    /// The GC may retain or copy the value. For maximum security, keep the lifetime
+    /// of Credential objects short and avoid caching CredentialBlob values.
+    /// </summary>
+    public string? CredentialBlob { get; set; }
+    public Persistence Persistence { get; set; }
+    public IDictionary<string, Object>? Attributes { get; set; }
+    public string? UserName { get; set; }
+
+    public UInt32 Flags { get; set; }
+    public string? TargetAlias { get; set; }
+
     internal Credential(NativeCode.NativeCredential ncred)
     {
         Flags = ncred.Flags;
@@ -68,19 +70,21 @@ internal class Credential : ICredential
 #pragma warning restore CS0675 // Bitwise-or operator used on a sign-extended operand
         }
         catch (ArgumentOutOfRangeException)
-        { }
+        {
+            // Invalid FILETIME — leave LastWritten as default (DateTime.MinValue)
+        }
 
         if (ncred.CredentialBlobSize >= 2)
         {
             CredentialBlob = Marshal.PtrToStringUni(ncred.CredentialBlob, (int)ncred.CredentialBlobSize / 2);
         }
-        Persistance = (Persistance)ncred.Persist;
+        Persistence = (Persistence)ncred.Persist;
 
         var AttributeCount = ncred.AttributeCount;
         if (AttributeCount > 0)
         {
             var attribSize = Marshal.SizeOf(typeof(NativeCode.NativeCredentialAttribute));
-            Attributes = new Dictionary<string, Object>();
+            Attributes = new Dictionary<string, Object>(StringComparer.Ordinal);
             byte[] rawData = new byte[AttributeCount * attribSize];
             var buffer = Marshal.AllocHGlobal(attribSize);
 
@@ -104,23 +108,7 @@ internal class Credential : ICredential
                     }
                     catch (JsonException)
                     {
-                        // Legacy BinaryFormatter migration path
-#if !NET8_0_OR_GREATER
-                        try
-                        {
-#pragma warning disable SYSLIB0011 // BinaryFormatter is obsolete — used only for one-time migration
-                            using var stream = new MemoryStream(val, false);
-                            var formatter = new BinaryFormatter();
-                            Attributes.Add(key, formatter.Deserialize(stream));
-#pragma warning restore SYSLIB0011
-                        }
-                        catch
-                        {
-                            Debug.WriteLine($"Could not deserialize attribute '{key}' — data may be corrupted or in an unsupported format");
-                        }
-#else
-                        Debug.WriteLine($"Could not deserialize attribute '{key}' — legacy BinaryFormatter data cannot be read on .NET 8+. Use netstandard2.0 build for one-time migration.");
-#endif
+                        Debug.WriteLine($"Could not deserialize attribute '{key}' — data may be corrupted or in an unsupported format");
                     }
                 }
             }
@@ -146,7 +134,7 @@ internal class Credential : ICredential
         Comment = null;
         TargetAlias = null;
         Type = CredentialType.Generic;
-        Persistance = Persistance.Session;
+        Persistence = Persistence.Session;
     }
 
     public Credential(ICredential credential)
@@ -158,7 +146,7 @@ internal class Credential : ICredential
         UserName = credential.UserName;
         if (credential.Attributes?.Count > 0)
         {
-            this.Attributes = new Dictionary<string, Object>();
+            this.Attributes = new Dictionary<string, Object>(StringComparer.Ordinal);
             foreach (var a in credential.Attributes)
             {
                 Attributes.Add(a);
@@ -167,7 +155,7 @@ internal class Credential : ICredential
         Comment = credential.Comment;
         TargetAlias = null;
         Type = credential.Type;
-        Persistance = credential.Persistance;
+        Persistence = credential.Persistence;
     }
 
     public Credential(string target, CredentialType type)
@@ -183,7 +171,7 @@ internal class Credential : ICredential
     {
         if (!string.IsNullOrEmpty(UserName))
         {
-            var userBuilder = new StringBuilder(UserName.Length + 2);
+            var userBuilder = new StringBuilder(UserName!.Length + 2);
             var domainBuilder = new StringBuilder(UserName.Length + 2);
 
             var returnCode = NativeCode.CredUIParseUserName(UserName, userBuilder, userBuilder.Capacity, domainBuilder, domainBuilder.Capacity);
@@ -195,7 +183,7 @@ internal class Credential : ICredential
             {
                 userBuilder.Append(UserName);
             }
-            else if (returnCode != 0)
+            else if (returnCode != NativeCode.CredentialUIReturnCodes.Success)
             {
                 throw new CredentialAPIException(SR.UnableToParseUserName, "CredUIParseUserName", lastError);
             }
@@ -213,16 +201,16 @@ internal class Credential : ICredential
         IntPtr buffer = default;
         GCHandle pinned = default;
 
-        if (!String.IsNullOrEmpty(this.Comment) && Encoding.Unicode.GetBytes(this.Comment).Length > 256)
-            throw new ArgumentException(SR.CommentTooLong, nameof(Comment));
+        if (!String.IsNullOrEmpty(this.Comment) && Encoding.Unicode.GetByteCount(this.Comment) > 256)
+            throw new InvalidOperationException(SR.CommentTooLong);
 
         if (String.IsNullOrEmpty(this.TargetName))
-            throw new ArgumentNullException(nameof(TargetName), SR.TargetNameNullOrEmpty);
+            throw new InvalidOperationException(SR.TargetNameNullOrEmpty);
         else if (this.TargetName.Length > 32767)
-            throw new ArgumentException(SR.TargetNameTooLong, nameof(TargetName));
+            throw new InvalidOperationException(SR.TargetNameTooLong);
 
         if (!AllowBlankPassword && String.IsNullOrEmpty(this.CredentialBlob))
-            throw new ArgumentNullException(nameof(CredentialBlob), SR.CredentialBlobNullOrEmpty);
+            throw new InvalidOperationException(SR.CredentialBlobNullOrEmpty);
 
         var credentialBlob = this.CredentialBlob ?? "";
         NativeCode.NativeCredential ncred = new NativeCode.NativeCredential
@@ -230,13 +218,13 @@ internal class Credential : ICredential
             Comment = this.Comment,
             TargetAlias = null,
             Type = (UInt32)this.Type,
-            Persist = (UInt32)this.Persistance,
+            Persist = (UInt32)this.Persistence,
             UserName = this.UserName,
             TargetName = this.TargetName,
-            CredentialBlobSize = (UInt32)Encoding.Unicode.GetBytes(credentialBlob).Length
+            CredentialBlobSize = (UInt32)Encoding.Unicode.GetByteCount(credentialBlob)
         };
         if (ncred.CredentialBlobSize > MaxCredentialBlobSize)
-            throw new ArgumentException(string.Format(SR.CredentialBlobTooLong, MaxCredentialBlobSize), nameof(CredentialBlob));
+            throw new InvalidOperationException(string.Format(SR.CredentialBlobTooLong, MaxCredentialBlobSize));
 
         ncred.CredentialBlob = Marshal.StringToCoTaskMemUni(credentialBlob);
         if (this.LastWritten != DateTime.MinValue)
@@ -257,7 +245,7 @@ internal class Credential : ICredential
             else
             {
                 if (Attributes.Count > 64)
-                    throw new ArgumentException(SR.TooManyAttributes);
+                    throw new InvalidOperationException(SR.TooManyAttributes);
 
                 ncred.AttributeCount = (UInt32)Attributes.Count;
                 nativeAttribs = new NativeCode.NativeCredentialAttribute[Attributes.Count];

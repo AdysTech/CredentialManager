@@ -10,6 +10,8 @@ bld/
 [Oo]bj/
 [Oo]ut/
 artifacts/
+dist/
+build.sh
 
 ## NuGet
 packages/

@@ -26,7 +26,7 @@ public enum CredentialType : uint
 /// <summary>
 /// Specifies how a credential is persisted in the Windows Credential Store.
 /// </summary>
-public enum Persistance : uint
+public enum Persistence : uint
 {
     /// <summary>
     /// The credential persists for the life of the logon session.
