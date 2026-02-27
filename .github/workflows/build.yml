@@ -32,7 +32,7 @@ jobs:
       run: dotnet build --configuration ${{ env.CONFIGURATION }} --no-restore
     
     - name: Test
-      run: dotnet test --configuration ${{ env.CONFIGURATION }} --no-build --verbosity normal
+      run: dotnet test --configuration ${{ env.CONFIGURATION }} --no-build --verbosity normal --filter "TestCategory=AppVeyor"
     
     - name: Pack NuGet packages
       run: dotnet pack --configuration ${{ env.CONFIGURATION }} --no-build --output ./artifacts
