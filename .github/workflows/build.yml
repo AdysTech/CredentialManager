@@ -35,7 +35,7 @@ jobs:
       run: dotnet test --configuration ${{ env.CONFIGURATION }} --no-build --verbosity normal --filter "TestCategory=AppVeyor"
     
     - name: Pack NuGet packages
-      run: dotnet pack --configuration ${{ env.CONFIGURATION }} --no-build --output ./artifacts
+      run: dotnet pack src/AdysTech.CredentialManager/AdysTech.CredentialManager.csproj --configuration ${{ env.CONFIGURATION }} --no-build --output ./artifacts
     
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
@@ -51,6 +51,11 @@ jobs:
     
     - name: Publish to NuGet
       if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      run: dotnet nuget push ./artifacts/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+      shell: pwsh
+      run: |
+        $packages = Get-ChildItem -Path ./artifacts -Filter *.nupkg
+        foreach ($package in $packages) {
+          dotnet nuget push $package.FullName --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        }
       env:
         NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
