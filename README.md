@@ -2,6 +2,7 @@
 
 [![NuGet](https://img.shields.io/nuget/v/AdysTech.CredentialManager)](https://www.nuget.org/packages/AdysTech.CredentialManager)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Build and Deploy](https://github.com/AdysTech/CredentialManager/actions/workflows/build.yml/badge.svg)](https://github.com/AdysTech/CredentialManager/actions/workflows/build.yml)
 
 A .NET library for storing and retrieving credentials from the Windows Credential Store.
 Wraps the native `CredWrite`, `CredRead`, `CredEnumerate`, and `CredDelete` APIs via P/Invoke,
@@ -278,3 +279,12 @@ The project requires Windows for testing (credential store access via interactiv
 ## License
 
 [MIT](LICENSE) — Copyright (c) 2016-2026 Adys Tech
+
+## Historical context
+C# wrapper around CredWrite / CredRead functions to store and retrieve from Windows Credential Store.
+Windows OS comes equipped with a very secure robust [Credential Manager](https://technet.microsoft.com/en-us/library/jj554668.aspx) from Windows XP onwards, and [good set of APIs](https://msdn.microsoft.com/en-us/library/windows/desktop/aa374731(v=vs.85).aspx#credentials_management_functions) to interact with it. However .NET Framework did not provide any standard way to interact with this vault.
+
+Microsoft Peer Channel blog (WCF team) has written [a blog post](https://docs.microsoft.com/en-us/archive/blogs/peerchan/application-password-security) in 2005 which provided basic structure of using the Win32 APIs for credential management in .NET.
+I used their code, and improved up on it to add `PromptForCredentials` function to display a dialog to get the credentials from user.
+
+I left the project stale for few years, and an amazing contributor @shakeyourbunny helped me to modernize the framework and fix few security audit findings. Huge thanks!

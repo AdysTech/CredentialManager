@@ -59,3 +59,30 @@ jobs:
         }
       env:
         NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+    
+    - name: Extract version and create tag
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      shell: pwsh
+      run: |
+        # Extract version from csproj
+        [xml]$csproj = Get-Content src/AdysTech.CredentialManager/AdysTech.CredentialManager.csproj
+        $version = $csproj.Project.PropertyGroup.Version | Select-Object -First 1
+        $tagName = "v$version"
+        
+        Write-Host "Package version: $version"
+        Write-Host "Tag name: $tagName"
+        
+        # Check if tag already exists
+        git fetch --tags
+        $tagExists = git tag -l $tagName
+        
+        if ($tagExists) {
+          Write-Host "Tag $tagName already exists, skipping tag creation"
+        } else {
+          Write-Host "Creating new tag: $tagName"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a $tagName -m "Release $version"
+          git push origin $tagName
+          Write-Host "Tag $tagName created and pushed"
+        }
