@@ -1,6 +1,6 @@
 using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using shakeyourbunny.CredentialManager;
+using AdysTech.CredentialManager;
 using System.Net;
 using System.Diagnostics;
 using System.Collections.Generic;

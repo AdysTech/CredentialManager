@@ -70,7 +70,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 ### Overview
 
 Major security and modernization release following a comprehensive code audit of the
-upstream AdysTech/CredentialManager library. This fork addresses critical security
+AdysTech/CredentialManager library. This release addresses critical security
 vulnerabilities, modernizes the codebase to current .NET standards, and improves
 overall code quality.
 
@@ -111,7 +111,7 @@ The following issues were identified during the audit:
    declaration existed in `NativeCode.cs` (the codebase uses
    `CredUIPromptForWindowsCredentials` instead).
 
-7. **Outdated Target Frameworks** — The library targets `net45` (out of Microsoft
+7. **Outdated Target Frameworks** — The library targeted `net45` (out of Microsoft
    support since January 2016) and `netstandard2.0`. No modern .NET target.
 
 ### Security Fixes
@@ -143,9 +143,6 @@ The following issues were identified during the audit:
 - **P/Invoke**: Removed unused `CredUIPromptForCredentials` declaration
 - **Exception handling**: Bare `catch(Exception)` blocks replaced with diagnostic output
 - **Default persistence**: Changed from `Enterprise` to `LocalMachine`
-- **Package rename**: Hard fork — namespace, assembly, and NuGet package renamed from
-  `AdysTech.CredentialManager` to `shakeyourbunny.CredentialManager`. Upstream MIT
-  attribution preserved.
 - **Test dependencies**: Updated to current versions (MSTest 3.3.1,
   Microsoft.NET.Test.Sdk 17.9.0, coverlet 6.0.2)
 
@@ -155,7 +152,7 @@ The following issues were identified during the audit:
 - `ArgumentNullException` guards on all public methods
 - Migration path: legacy BinaryFormatter attributes auto-converted to JSON on read
   (netstandard2.0 only)
-- `LICENSE` file (standard filename, MIT, both copyright holders)
+- `LICENSE` file (standard filename, MIT)
 - Comprehensive unit tests for persistence parameter variations, JSON attribute
   round-trips (string, number, struct), and null parameter handling
 - `SecureZeroMemory` P/Invoke (`kernel32.dll!RtlZeroMemory`) for JIT-safe zeroing

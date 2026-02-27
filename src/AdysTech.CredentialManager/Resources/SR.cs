@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Resources;
 
-namespace shakeyourbunny.CredentialManager;
+namespace AdysTech.CredentialManager;
 
 /// <summary>
 /// Internal string resource accessor. Loads localized strings from embedded .resx resources
@@ -10,7 +10,7 @@ namespace shakeyourbunny.CredentialManager;
 internal static class SR
 {
     private static readonly ResourceManager s_resourceManager =
-        new ResourceManager("shakeyourbunny.CredentialManager.Resources.Strings", typeof(SR).Assembly);
+        new ResourceManager("AdysTech.CredentialManager.Resources.Strings", typeof(SR).Assembly);
 
     internal static string GetString(string name) =>
         s_resourceManager.GetString(name, CultureInfo.CurrentUICulture) ?? name;

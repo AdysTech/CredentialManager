@@ -1,6 +1,6 @@
 using System.Net;
 using System.Text.Json;
-using shakeyourbunny.CredentialManager;
+using AdysTech.CredentialManager;
 
 #pragma warning disable SCS0015 // Hardcoded passwords — this is a demo application
 

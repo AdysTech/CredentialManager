@@ -1,4 +1,4 @@
-namespace shakeyourbunny.CredentialManager;
+namespace AdysTech.CredentialManager;
 
 /// <summary>
 /// Specifies the type of credential stored in the Windows Credential Store.

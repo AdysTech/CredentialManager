@@ -6,7 +6,7 @@ using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace shakeyourbunny.CredentialManager;
+namespace AdysTech.CredentialManager;
 
 //ref: https://docs.microsoft.com/en-us/archive/blogs/peerchan/application-password-security
 

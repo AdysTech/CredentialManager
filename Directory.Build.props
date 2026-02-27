@@ -4,15 +4,12 @@
     <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
     <LangVersion>12.0</LangVersion>
     <Nullable>enable</Nullable>
-    <PackageProjectUrl>https://github.com/shakeyourbunny/CredentialManager</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/shakeyourbunny/CredentialManager</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/AdysTech/CredentialManager</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/AdysTech/CredentialManager</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Copyright>© Adys Tech 2016-2022, © shakeyourbunny 2026</Copyright>
-    <Authors>AdysTech;shakeyourbunny</Authors>
-    <SignAssembly>true</SignAssembly>
-    <DelaySign>false</DelaySign>
-    <AssemblyOriginatorKeyFile>../../key.snk</AssemblyOriginatorKeyFile>
+    <Copyright>© Adys Tech 2016-2026</Copyright>
+    <Authors>AdysTech</Authors>
 
     <!-- Source Link: enables debugger stepping into source from NuGet -->
     <PublishRepositoryUrl>true</PublishRepositoryUrl>

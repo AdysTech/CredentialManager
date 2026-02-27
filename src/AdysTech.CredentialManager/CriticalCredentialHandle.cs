@@ -2,7 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
-namespace shakeyourbunny.CredentialManager;
+namespace AdysTech.CredentialManager;
 
 /// <summary>
 /// Safe handle wrapper for unmanaged credential memory allocated by the Windows Credential API.

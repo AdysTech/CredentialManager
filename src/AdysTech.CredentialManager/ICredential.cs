@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 
-namespace shakeyourbunny.CredentialManager;
+namespace AdysTech.CredentialManager;
 
 /// <summary>
 /// Represents a credential stored in the Windows Credential Store, exposing

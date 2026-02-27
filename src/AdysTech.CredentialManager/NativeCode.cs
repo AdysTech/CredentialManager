@@ -2,7 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace shakeyourbunny.CredentialManager;
+namespace AdysTech.CredentialManager;
 
 internal static class NativeCode
 {

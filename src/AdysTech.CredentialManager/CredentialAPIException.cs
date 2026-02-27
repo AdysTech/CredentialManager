@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace shakeyourbunny.CredentialManager;
+namespace AdysTech.CredentialManager;
 
 /// <summary>
 /// Exception thrown when a Windows Credential Manager API call fails.

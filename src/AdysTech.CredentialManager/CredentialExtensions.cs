@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace shakeyourbunny.CredentialManager;
+namespace AdysTech.CredentialManager;
 
 /// <summary>
 /// Extension methods for credential types.

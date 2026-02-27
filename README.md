@@ -1,16 +1,12 @@
 # CredentialManager
 
-[![NuGet](https://img.shields.io/nuget/v/shakeyourbunny.CredentialManager)](https://www.nuget.org/packages/shakeyourbunny.CredentialManager)
+[![NuGet](https://img.shields.io/nuget/v/AdysTech.CredentialManager)](https://www.nuget.org/packages/AdysTech.CredentialManager)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 A .NET library for storing and retrieving credentials from the Windows Credential Store.
 Wraps the native `CredWrite`, `CredRead`, `CredEnumerate`, and `CredDelete` APIs via P/Invoke,
 providing a safe managed interface for credential management in desktop applications, CLI tools,
 and background services.
-
-Forked from [AdysTech/CredentialManager](https://github.com/AdysTech/CredentialManager) with
-security hardening, modernized targets, and comprehensive static analysis. See
-[CHANGELOG.md](CHANGELOG.md) for the full audit findings and changes.
 
 ## Features
 
@@ -20,7 +16,6 @@ security hardening, modernized targets, and comprehensive static analysis. See
 - Configurable persistence (Session, LocalMachine, Enterprise)
 - JIT-safe memory zeroing of credential buffers via `RtlZeroMemory` P/Invoke
 - Full nullable reference type annotations
-- Strong-named assembly
 - Source Link enabled for debugger integration
 
 ## Target Frameworks
@@ -35,13 +30,13 @@ security hardening, modernized targets, and comprehensive static analysis. See
 ### NuGet (recommended)
 
 ```
-dotnet add package shakeyourbunny.CredentialManager
+dotnet add package AdysTech.CredentialManager
 ```
 
 Or in your `.csproj`:
 
 ```xml
-<PackageReference Include="shakeyourbunny.CredentialManager" Version="3.1.0" />
+<PackageReference Include="AdysTech.CredentialManager" Version="3.1.0" />
 ```
 
 ### Project Reference
@@ -49,14 +44,14 @@ Or in your `.csproj`:
 For local development or when building from source:
 
 ```xml
-<ProjectReference Include="path/to/src/shakeyourbunny.CredentialManager/shakeyourbunny.CredentialManager.csproj" />
+<ProjectReference Include="path/to/src/AdysTech.CredentialManager/AdysTech.CredentialManager.csproj" />
 ```
 
 ## Quick Start
 
 ```csharp
 using System.Net;
-using shakeyourbunny.CredentialManager;
+using AdysTech.CredentialManager;
 
 // Save
 var cred = new NetworkCredential("user", "password", "domain");
@@ -79,7 +74,7 @@ CredentialManager.RemoveCredentials("MyApp:api-token");
 
 2. Add the using directive:
    ```csharp
-   using shakeyourbunny.CredentialManager;
+   using AdysTech.CredentialManager;
    ```
 
 3. Use `CredentialManager` as a static class — no instantiation needed.
@@ -221,6 +216,38 @@ var count = ((JsonElement)stored.Attributes["retryCount"]).GetInt32();
 Constraints: each attribute value must serialize to 256 bytes or less, maximum 64 attributes
 per credential, attribute keys maximum 256 characters.
 
+## Upgrading from v2.x
+
+### BinaryFormatter Attributes
+
+Legacy BinaryFormatter-encoded attributes can no longer be read. The BinaryFormatter
+compatibility layer has been removed entirely. Legacy attributes are silently skipped
+with a debug message. Re-save credentials to convert them to JSON format.
+
+### Attribute Type Changes
+
+Attribute values are now `JsonElement` objects instead of the original .NET types:
+
+```csharp
+// v2.x
+var role = (string)cred.Attributes["role"];
+
+// v3.x
+var role = ((JsonElement)cred.Attributes["role"]).GetString();
+// Complex types:
+var info = ((JsonElement)cred.Attributes["info"]).Deserialize<MyType>();
+```
+
+### Spelling Corrections
+
+The misspelled `Persistance` enum, properties, and parameters have been corrected to
+`Persistence`. Update all references accordingly.
+
+### Default Persistence
+
+The default persistence changed from `Enterprise` to `LocalMachine`. If your application
+relies on domain-replicated credentials, explicitly pass `Persistence.Enterprise`.
+
 ## Security
 
 - **No BinaryFormatter** — attribute serialization uses `System.Text.Json` exclusively.
@@ -239,48 +266,6 @@ per credential, attribute keys maximum 256 characters.
 > **Note:** `CredentialBlob` is a managed `string`, which the GC may copy or retain in memory.
 > For maximum security, keep credential objects short-lived and avoid caching password values.
 
-## Migration from AdysTech.CredentialManager
-
-### Namespace Change
-
-```csharp
-// Before (AdysTech)
-using AdysTech.CredentialManager;
-
-// After
-using shakeyourbunny.CredentialManager;
-```
-
-### BinaryFormatter Attributes
-
-Legacy BinaryFormatter-encoded attributes can no longer be read. The BinaryFormatter
-compatibility layer has been removed entirely. Legacy attributes are silently skipped
-with a debug message. Re-save credentials to convert them to JSON format.
-
-### Attribute Type Changes
-
-Attribute values are now `JsonElement` objects instead of the original .NET types:
-
-```csharp
-// AdysTech v2.x
-var role = (string)cred.Attributes["role"];
-
-// shakeyourbunny v3.1.0
-var role = ((JsonElement)cred.Attributes["role"]).GetString();
-// Complex types:
-var info = ((JsonElement)cred.Attributes["info"]).Deserialize<MyType>();
-```
-
-### Spelling Corrections
-
-The misspelled `Persistance` enum, properties, and parameters have been corrected to
-`Persistence`. Update all references accordingly.
-
-### Default Persistence
-
-The default persistence changed from `Enterprise` to `LocalMachine`. If your application
-relies on domain-replicated credentials, explicitly pass `Persistence.Enterprise`.
-
 ## Building
 
 ```
@@ -292,4 +277,4 @@ The project requires Windows for testing (credential store access via interactiv
 
 ## License
 
-[MIT](LICENSE) — Copyright (c) 2016-2022 Adys Tech, Copyright (c) 2026 shakeyourbunny
+[MIT](LICENSE) — Copyright (c) 2016-2026 Adys Tech

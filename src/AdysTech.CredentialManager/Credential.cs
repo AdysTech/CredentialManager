@@ -7,7 +7,7 @@ using System.Text;
 using System.Text.Json;
 
 
-namespace shakeyourbunny.CredentialManager;
+namespace AdysTech.CredentialManager;
 
 internal class Credential : ICredential
 {
