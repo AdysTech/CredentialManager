@@ -1,77 +1,138 @@
-﻿using Microsoft.Win32.SafeHandles;
 using System;
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
-namespace AdysTech.CredentialManager
+namespace AdysTech.CredentialManager;
+
+/// <summary>
+/// Safe handle wrapper for unmanaged credential memory allocated by the Windows Credential API.
+/// Ensures native credential buffers (including sensitive credential blobs) are securely zeroed
+/// before being freed.
+/// </summary>
+sealed class CriticalCredentialHandle : CriticalHandleZeroOrMinusOneIsInvalid
 {
-    sealed class CriticalCredentialHandle : CriticalHandleZeroOrMinusOneIsInvalid
+    private readonly uint _enumerationCount;
+
+    /// <summary>
+    /// Creates a handle for a single credential (from CredRead).
+    /// </summary>
+    internal CriticalCredentialHandle(IntPtr preexistingHandle)
     {
-        // Set the handle.
-        internal CriticalCredentialHandle(IntPtr preexistingHandle)
+        SetHandle(preexistingHandle);
+        _enumerationCount = 0;
+    }
+
+    /// <summary>
+    /// Creates a handle for an enumeration result (from CredEnumerate).
+    /// </summary>
+    /// <param name="preexistingHandle">Pointer to the credential array.</param>
+    /// <param name="enumerationCount">Number of credentials in the array.</param>
+    internal CriticalCredentialHandle(IntPtr preexistingHandle, uint enumerationCount)
+    {
+        SetHandle(preexistingHandle);
+        _enumerationCount = enumerationCount;
+    }
+
+    /// <summary>
+    /// Reads a single credential from the native handle.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Thrown when the handle is invalid.</exception>
+    internal Credential GetCredential()
+    {
+        if (!IsInvalid)
         {
-            SetHandle (preexistingHandle);
+            var ncred = (NativeCode.NativeCredential)Marshal.PtrToStructure(handle,
+                  typeof(NativeCode.NativeCredential))!;
+
+            return new Credential(ncred);
         }
-
-        internal Credential GetCredential()
+        else
         {
-            if ( !IsInvalid )
-            {
-                // Get the Credential from the mem location
-                NativeCode.NativeCredential ncred = (NativeCode.NativeCredential) Marshal.PtrToStructure (handle,
-                      typeof (NativeCode.NativeCredential));
+            throw new InvalidOperationException(SR.InvalidCriticalHandle);
+        }
+    }
 
-                // Create a managed Credential type and fill it with data from the native counterpart.
-                Credential cred = new Credential (ncred);
-   
-                return cred;
+    /// <summary>
+    /// Reads multiple credentials from the native handle (enumeration result).
+    /// </summary>
+    /// <param name="size">Number of credentials to read.</param>
+    /// <exception cref="InvalidOperationException">Thrown when the handle is invalid.</exception>
+    internal Credential[] EnumerateCredentials(uint size)
+    {
+        if (!IsInvalid)
+        {
+            var credentialArray = new Credential[size];
+
+            for (int i = 0; i < size; i++)
+            {
+                IntPtr ptrPlc = Marshal.ReadIntPtr(handle, i * IntPtr.Size);
+
+                var nc = (NativeCode.NativeCredential)Marshal.PtrToStructure(ptrPlc,
+                    typeof(NativeCode.NativeCredential))!;
+
+                credentialArray[i] = new Credential(nc);
+            }
+
+            return credentialArray;
+        }
+        else
+        {
+            throw new InvalidOperationException(SR.InvalidCriticalHandle);
+        }
+    }
+
+    /// <summary>
+    /// Securely zeros credential blobs in native memory, then frees the handle via CredFree.
+    /// Uses RtlZeroMemory via P/Invoke to prevent JIT dead store elimination.
+    /// </summary>
+    override protected bool ReleaseHandle()
+    {
+        if (!IsInvalid)
+        {
+            // Zero credential blobs before freeing — prevents sensitive data from
+            // lingering in freed memory pages.
+            ZeroCredentialBlobs();
+
+            NativeCode.CredFree(handle);
+            SetHandleAsInvalid();
+            return true;
+        }
+        return false;
+    }
+
+    private void ZeroCredentialBlobs()
+    {
+        try
+        {
+            if (_enumerationCount == 0)
+            {
+                // Single credential (from CredRead)
+                ZeroSingleCredentialBlob(handle);
             }
             else
             {
-                throw new InvalidOperationException ("Invalid CriticalHandle!");
-            }
-        }
-
-        internal Credential[] EnumerateCredentials(uint size)
-        {
-            if (!IsInvalid)
-            {
-                var credentialArray = new Credential[size];
-
-                for (int i = 0; i < size; i++)
+                // Enumeration (from CredEnumerate) — handle is array of pointers
+                for (uint i = 0; i < _enumerationCount; i++)
                 {
-                    IntPtr ptrPlc = Marshal.ReadIntPtr(handle, i * IntPtr.Size);
-
-                    var nc = (NativeCode.NativeCredential)Marshal.PtrToStructure(ptrPlc, typeof(NativeCode.NativeCredential));
-
-                    credentialArray[i] = new Credential(nc);
+                    IntPtr ptr = Marshal.ReadIntPtr(handle, (int)(i * (uint)IntPtr.Size));
+                    ZeroSingleCredentialBlob(ptr);
                 }
-
-                return credentialArray;
-            }
-            else
-            {
-                throw new InvalidOperationException("Invalid CriticalHandle!");
             }
         }
-
-        // Perform any specific actions to release the handle in the ReleaseHandle method.
-        // Often, you need to use Pinvoke to make a call into the Win32 API to release the 
-        // handle. In this case, however, we can use the Marshal class to release the unmanaged memory.
-
-        override protected bool ReleaseHandle()
+        catch
         {
-            // If the handle was set, free it. Return success.
-            if ( !IsInvalid )
-            {
-                // NOTE: We should also ZERO out the memory allocated to the handle, before free'ing it
-                // so there are no traces of the sensitive data left in memory.
-                NativeCode.CredFree (handle);
-                // Mark the handle as invalid for future users.
-                SetHandleAsInvalid ();
-                return true;
-            }
-            // Return false. 
-            return false;
+            // Best-effort zeroing — don't prevent CredFree on failure
+        }
+    }
+
+    private static void ZeroSingleCredentialBlob(IntPtr credPtr)
+    {
+        var ncred = (NativeCode.NativeCredential)Marshal.PtrToStructure(credPtr,
+            typeof(NativeCode.NativeCredential))!;
+
+        if (ncred.CredentialBlob != IntPtr.Zero && ncred.CredentialBlobSize > 0)
+        {
+            NativeCode.SecureZeroMemory(ncred.CredentialBlob, new UIntPtr(ncred.CredentialBlobSize));
         }
     }
 }

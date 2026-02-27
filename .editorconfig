@@ -1,7 +1,186 @@
-﻿[*.cs]
+root = true
 
-# IDE0008: Use explicit type
-csharp_style_var_elsewhere = false:suggestion
+[*]
+indent_style = space
+indent_size = 4
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
 
-# IDE0018: Inline variable declaration
-csharp_style_inlined_variable_declaration = false:suggestion
+[*.{xml,json,yml,yaml,resx,props,targets,csproj}]
+indent_size = 2
+
+[*.cs]
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_prefer_braces = when_multiline:suggestion
+dotnet_sort_system_directives_first = true
+
+# ============================================================
+# .NET Analyzers (CA rules)
+# ============================================================
+
+# Globalization: Windows Credential Store is not globalized
+dotnet_diagnostic.CA1303.severity = none
+dotnet_diagnostic.CA1304.severity = none
+dotnet_diagnostic.CA1305.severity = none
+dotnet_diagnostic.CA1307.severity = none
+dotnet_diagnostic.CA1310.severity = none
+
+# CA1401: P/Invokes should not be visible — ours are internal
+dotnet_diagnostic.CA1401.severity = warning
+
+# CA1416: Platform compatibility — library IS Windows-only
+dotnet_diagnostic.CA1416.severity = suggestion
+
+# CA1720: Identifier contains type name — "blob" fields are fine
+dotnet_diagnostic.CA1720.severity = none
+
+# CA1711: Identifiers should not have incorrect suffix
+dotnet_diagnostic.CA1711.severity = none
+
+# CA1724: Type names should not match namespaces — CredentialManager is correct
+dotnet_diagnostic.CA1724.severity = none
+
+# CA1060: Move P/Invokes to NativeMethods — NativeCode is equivalent
+dotnet_diagnostic.CA1060.severity = none
+
+# CA1510: ThrowIfNull — .NET 6+ only, not available in netstandard2.0
+dotnet_diagnostic.CA1510.severity = none
+
+# CA1707: Identifiers should not contain underscores — P/Invoke enums use Win32 naming
+dotnet_diagnostic.CA1707.severity = none
+
+# CA1815: Override equals on value types
+dotnet_diagnostic.CA1815.severity = warning
+
+# CA1838: StringBuilder in P/Invoke — established Win32 API calling convention
+dotnet_diagnostic.CA1838.severity = none
+
+# CA1852: Seal internal types
+dotnet_diagnostic.CA1852.severity = warning
+
+# CA1863: CompositeFormat — .NET 8+ only, not available in netstandard2.0
+dotnet_diagnostic.CA1863.severity = none
+
+# CA1869: Cache Regex instances
+dotnet_diagnostic.CA1869.severity = warning
+
+# CA2101: Marshalling for P/Invoke string arguments
+dotnet_diagnostic.CA2101.severity = warning
+
+# ============================================================
+# StyleCop (SA rules)
+# ============================================================
+# The library uses P/Invoke conventions (Win32 struct/enum naming,
+# explicit type names in marshalling). StyleCop's C# style rules
+# conflict with these established Windows API conventions.
+# We keep meaningful SA rules and suppress cosmetic ones.
+
+# SA0001: XML comment analysis disabled — no XML doc generation
+dotnet_diagnostic.SA0001.severity = none
+
+# --- Spacing & layout (cosmetic) ---
+dotnet_diagnostic.SA1000.severity = none
+dotnet_diagnostic.SA1005.severity = none
+dotnet_diagnostic.SA1009.severity = none
+dotnet_diagnostic.SA1011.severity = none
+dotnet_diagnostic.SA1101.severity = none
+dotnet_diagnostic.SA1111.severity = none
+dotnet_diagnostic.SA1116.severity = none
+dotnet_diagnostic.SA1117.severity = none
+dotnet_diagnostic.SA1119.severity = none
+dotnet_diagnostic.SA1122.severity = none
+dotnet_diagnostic.SA1128.severity = none
+dotnet_diagnostic.SA1131.severity = none
+dotnet_diagnostic.SA1133.severity = none
+dotnet_diagnostic.SA1200.severity = none
+dotnet_diagnostic.SA1413.severity = none
+dotnet_diagnostic.SA1501.severity = none
+dotnet_diagnostic.SA1503.severity = none
+
+# --- Blank line rules (cosmetic) ---
+dotnet_diagnostic.SA1507.severity = none
+dotnet_diagnostic.SA1510.severity = none
+dotnet_diagnostic.SA1512.severity = none
+dotnet_diagnostic.SA1513.severity = none
+dotnet_diagnostic.SA1515.severity = none
+dotnet_diagnostic.SA1516.severity = none
+
+# --- Element ordering (cosmetic) ---
+dotnet_diagnostic.SA1201.severity = none
+dotnet_diagnostic.SA1202.severity = none
+dotnet_diagnostic.SA1204.severity = none
+dotnet_diagnostic.SA1206.severity = none
+dotnet_diagnostic.SA1208.severity = none
+dotnet_diagnostic.SA1210.severity = none
+
+# --- Naming: P/Invoke structs use Win32 conventions (CREDENTIAL, cbSize, etc.) ---
+dotnet_diagnostic.SA1121.severity = none
+dotnet_diagnostic.SA1303.severity = none
+dotnet_diagnostic.SA1304.severity = none
+dotnet_diagnostic.SA1307.severity = none
+dotnet_diagnostic.SA1308.severity = none
+dotnet_diagnostic.SA1309.severity = none
+dotnet_diagnostic.SA1310.severity = none
+dotnet_diagnostic.SA1311.severity = none
+dotnet_diagnostic.SA1312.severity = none
+dotnet_diagnostic.SA1313.severity = none
+
+# --- Access modifiers ---
+dotnet_diagnostic.SA1400.severity = none
+
+# --- Documentation: keep for public API ---
+dotnet_diagnostic.SA1600.severity = warning
+dotnet_diagnostic.SA1602.severity = suggestion
+dotnet_diagnostic.SA1649.severity = warning
+
+# --- File header rules — not used ---
+dotnet_diagnostic.SA1633.severity = none
+dotnet_diagnostic.SA1634.severity = none
+dotnet_diagnostic.SA1635.severity = none
+dotnet_diagnostic.SA1636.severity = none
+dotnet_diagnostic.SA1637.severity = none
+dotnet_diagnostic.SA1638.severity = none
+dotnet_diagnostic.SA1639.severity = none
+dotnet_diagnostic.SA1640.severity = none
+dotnet_diagnostic.SA1641.severity = none
+
+# ============================================================
+# SonarAnalyzer (S rules)
+# ============================================================
+
+# S101: Pascal case naming — CredentialAPIException is established API name
+dotnet_diagnostic.S101.severity = none
+
+# S2344: Enum suffix 'Flags' — P/Invoke enums mirror Win32 naming
+dotnet_diagnostic.S2344.severity = none
+
+# S3267: Simplify loop to LINQ — marshal cleanup requires explicit loop
+dotnet_diagnostic.S3267.severity = none
+
+# S3925: ISerializable pattern — guarded by #if, not applicable on net8.0
+dotnet_diagnostic.S3925.severity = none
+
+# ============================================================
+# Meziantou (MA rules)
+# ============================================================
+
+# MA0011: IFormatProvider — format strings here are internal diagnostics, not user-facing
+dotnet_diagnostic.MA0011.severity = none
+
+# MA0016: Return IList<> instead of List<> — would be a public API breaking change
+dotnet_diagnostic.MA0016.severity = none
+
+# MA0048: File name must match type name — PublicEnums.cs groups related enums by design
+dotnet_diagnostic.MA0048.severity = none
+
+# MA0049: Type name should not match namespace — CredentialManager IS the correct name
+dotnet_diagnostic.MA0049.severity = none
+
+# MA0051: Method too long — SaveCredential is complex but cohesive (P/Invoke marshalling)
+dotnet_diagnostic.MA0051.severity = none
+
+[*.sln]
+indent_style = tab
